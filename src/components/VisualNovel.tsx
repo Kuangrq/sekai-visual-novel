@@ -59,6 +59,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let xmlContent = ''; // 累积完整的XML内容
 
       while (true) {
         const { done, value } = await reader.read();
@@ -76,12 +77,14 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
               
               if (data.type === 'content') {
                 // 累积接收到的XML内容
-                // 这里应该实时解析并更新UI
+                xmlContent += data.data;
                 console.log('Received chunk:', data.data);
+                console.log('Total XML so far:', xmlContent);
               } else if (data.type === 'complete') {
                 // 故事段落完成，解析完整的XML
-                const xmlContent = buffer; // 这里应该是完整的XML内容
+                console.log('Parsing complete XML:', xmlContent);
                 const segments = parseSimpleXML(xmlContent);
+                console.log('Parsed segments:', segments);
                 setCurrentSegments(segments);
                 setCurrentSegmentIndex(0);
                 setChoices(data.choices || []);
@@ -106,6 +109,10 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     
     setGameStarted(true);
     setStoryHistory([userPrompt]);
+    
+    // 调试：测试XML解析
+    console.log('Starting game with prompt:', userPrompt);
+    
     await fetchStory(undefined, userPrompt);
   };
 

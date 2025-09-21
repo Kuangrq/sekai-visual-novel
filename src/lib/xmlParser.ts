@@ -206,6 +206,13 @@ export function parseXMLToSegments(xmlString: string): {
 export function parseSimpleXML(xmlString: string): ParsedSegment[] {
   const segments: ParsedSegment[] = [];
   
+  if (!xmlString || xmlString.trim() === '') {
+    console.warn('Empty XML string provided to parseSimpleXML');
+    return segments;
+  }
+  
+  console.log('Parsing XML string:', xmlString);
+  
   // 使用正则表达式匹配不同的标签
   const narratorRegex = /<Narrator>(.*?)<\/Narrator>/gs;
   const characterRegex = /<character name="([^"]+)">(.*?)<\/character>/gs;
@@ -221,41 +228,49 @@ export function parseSimpleXML(xmlString: string): ParsedSegment[] {
     });
   }
   
-  // 处理角色对话
-  while ((match = characterRegex.exec(xmlString)) !== null) {
-    const characterName = match[1];
-    const characterContent = match[2];
+  // 处理角色对话 - 改进逻辑以处理多个action和say标签
+  const characterMatches = [...xmlString.matchAll(characterRegex)];
+  
+  for (const characterMatch of characterMatches) {
+    const characterName = characterMatch[1];
+    const characterContent = characterMatch[2];
     
-    // 提取动作和表情
-    let expression = 'neutral';
-    let action = '';
-    let dialogue = '';
+    console.log(`Processing character: ${characterName}`);
+    console.log(`Character content: ${characterContent}`);
+    
+    // 重置正则表达式
+    actionRegex.lastIndex = 0;
+    sayRegex.lastIndex = 0;
     
     const actionMatches = [...characterContent.matchAll(actionRegex)];
     const sayMatches = [...characterContent.matchAll(sayRegex)];
     
-    if (actionMatches.length > 0) {
-      expression = actionMatches[0][1];
-      action = actionMatches[0][2].trim();
-    }
+    console.log(`Found ${actionMatches.length} actions and ${sayMatches.length} dialogues`);
     
-    if (sayMatches.length > 0) {
-      dialogue = sayMatches[0][1].trim();
-    }
-    
-    if (dialogue) {
-      segments.push({
-        type: 'character',
-        name: characterName,
-        expression: expression,
-        text: dialogue,
-        action: action
-      });
+    // 为每个对话创建一个段落
+    for (let i = 0; i < sayMatches.length; i++) {
+      const dialogue = sayMatches[i][1].trim();
+      let expression = 'neutral';
+      let action = '';
+      
+      // 找到对应的动作（如果有的话）
+      if (i < actionMatches.length) {
+        expression = actionMatches[i][1].toLowerCase();
+        action = actionMatches[i][2].trim();
+      }
+      
+      if (dialogue) {
+        segments.push({
+          type: 'character',
+          name: characterName,
+          expression: expression,
+          text: dialogue,
+          action: action
+        });
+      }
     }
   }
   
-  return segments.sort((a, b) => {
-    // 简单的排序逻辑，实际项目中可能需要更复杂的逻辑
-    return 0;
-  });
+  console.log('Final parsed segments:', segments);
+  return segments;
 }

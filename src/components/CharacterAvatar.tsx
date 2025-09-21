@@ -21,7 +21,7 @@ interface CharacterAvatarProps {
 }
 
 // 表情名称映射到文件名
-const emotionMap: Record<EmotionType, string> = {
+const emotionMap: Record<string, string> = {
   'neutral': 'Neutral',
   'happy': 'Happy',
   'sad': 'Sad',
@@ -36,7 +36,10 @@ const emotionMap: Record<EmotionType, string> = {
   'disgusted': 'Disgusted',
   'fear': 'Fear',
   'deeply in love': 'Deeply In Love',
-  'very happy': 'Very Happy'
+  'very happy': 'Very Happy',
+  // 添加更多可能的表情映射
+  'very_happy': 'Very Happy',
+  'deeply_in_love': 'Deeply In Love'
 };
 
 // 尺寸样式配置
@@ -59,7 +62,7 @@ export function CharacterAvatar({
 
   // 构建图片路径
   const getImagePath = (char: CharacterName, emo: EmotionType): string => {
-    const emotionFile = emotionMap[emo] || emotionMap.neutral;
+    const emotionFile = emotionMap[emo.toLowerCase()] || emotionMap.neutral;
     return `/characters/${char}/${emotionFile}.png`;
   };
 
