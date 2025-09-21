@@ -16,7 +16,7 @@ interface CharacterAvatarProps {
   characterName: CharacterName;
   emotion?: EmotionType;
   className?: string;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'huge';
   showTransition?: boolean;
 }
 
@@ -46,7 +46,10 @@ const emotionMap: Record<string, string> = {
 const sizeStyles = {
   small: 'w-16 h-16',
   medium: 'w-24 h-24',
-  large: 'w-32 h-32'
+  large: 'w-32 h-32',
+  xlarge: 'w-48 h-48',
+  xxlarge: 'w-64 h-64',
+  huge: 'w-80 h-80'
 };
 
 export function CharacterAvatar({ 
@@ -149,7 +152,7 @@ interface CharacterSwitcherProps {
     isActive?: boolean;
   }>;
   className?: string;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge';
 }
 
 export function CharacterSwitcher({ 
@@ -171,7 +174,10 @@ export function CharacterSwitcher({
           <CharacterAvatar
             characterName={char.name}
             emotion={char.emotion}
-            size={char.isActive ? size : size === 'large' ? 'medium' : 'small'}
+            size={char.isActive ? size : 
+              size === 'xxlarge' ? 'xlarge' :
+              size === 'xlarge' ? 'large' :
+              size === 'large' ? 'medium' : 'small'}
             showTransition={true}
           />
         </div>

@@ -200,14 +200,15 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* 角色显示区域 */}
         {currentCharacter && (
-          <div className="flex-shrink-0 pt-8 pb-4">
+          <div className="flex-shrink-0 pt-8 pb-6">
             <div className="flex justify-center">
-              <CharacterAvatar
-                characterName={currentCharacter.name}
-                emotion={currentCharacter.emotion}
-                size="large"
-                showTransition={true}
-              />
+               <CharacterAvatar
+                 characterName={currentCharacter.name}
+                 emotion={currentCharacter.emotion}
+                 size="xxlarge"
+                 showTransition={true}
+                 className="drop-shadow-2xl"
+               />
             </div>
           </div>
         )}
