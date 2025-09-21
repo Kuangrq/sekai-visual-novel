@@ -8,20 +8,40 @@ const storySegments = [
     id: 'intro',
     content: `<Narrator>The warm scent of chili oil and sizzling meat wraps around me as I step inside Wanmin Restaurant.</Narrator> <Narrator>The cheerful chatter dies instantly, and I freeze as every head turns toward the door.</Narrator>`,
     choices: [
-      { id: 'greet_friendly', text: '友好地向大家打招呼' },
-      { id: 'stay_silent', text: '保持沉默，观察情况' },
-      { id: 'ask_about_harbor', text: '询问关于璃月港的事情' }
+      { id: 'greet_friendly', text: 'Greet everyone with a friendly smile' },
+      { id: 'stay_silent', text: 'Stay silent and observe the situation' },
+      { id: 'ask_about_harbor', text: 'Ask about what\'s happening in Liyue Harbor' }
     ]
   },
   {
     id: 'character_responses',
     content: `<character name="Lumine"> <action expression="Surprised">Nearly dropping her chopsticks, golden eyes widening</action> <say>Another traveler? Here in Liyue Harbor?</say> <action expression="Happy">Standing gracefully, her white dress swaying with the movement</action> <say>It's rare to meet someone else who journeys between worlds.</say> </character> <character name="Zhongli"> <action expression="Neutral">Looking up from his tea with measured interest</action> <say>Indeed. Your arrival was... anticipated.</say> <action expression="Thinking">Setting down his cup with deliberate care</action> <say>The contracts speak of one who would arrive when the harbor moon reaches its zenith.</say> </character> <character name="Tartaglia"> <action expression="Confident">Leaning back in his chair with a sharp grin</action> <say>Ha! Another fighter walks through that door - I can smell it.</say> <action expression="Very Happy">Standing up, cracking his knuckles</action> <say>The way you carry yourself, the weight of your steps... You're no ordinary wanderer!</say> </character> <character name="Venti"> <action expression="Happy">Strumming a cheerful note on his lyre</action> <say>Ehe~ What an auspicious wind blows you our way!</say> <action expression="Confident">Hopping down from his perch on the windowsill</action> <say>I was just composing a ballad about mysterious strangers. Care to inspire the next verse?</say> </character>`,
     choices: [
-      { id: 'ask_lumine', text: '向流萤询问更多关于旅行者的事情' },
-      { id: 'challenge_tartaglia', text: '接受达达利亚的挑战' },
-      { id: 'listen_venti', text: '请温迪演奏他的新曲子' },
-      { id: 'talk_zhongli', text: '与钟离讨论这些神秘的契约' }
+      { id: 'ask_lumine', text: 'Ask Lumine more about her travels between worlds' },
+      { id: 'challenge_tartaglia', text: 'Accept Tartaglia\'s challenge and show your skills' },
+      { id: 'listen_venti', text: 'Ask Venti to play his new ballad' },
+      { id: 'talk_zhongli', text: 'Discuss the mysterious contracts with Zhongli' }
     ]
+  },
+  {
+    id: 'lumine_path',
+    content: `<character name="Lumine"> <action expression="Sad">Her expression grows distant, a shadow passing over her golden eyes</action> <say>I've been searching for my brother for so long... We were separated when we arrived in this world.</say> <action expression="Thinking">She pauses, studying your face intently</action> <say>Perhaps you've seen him? He looks much like me, but with lighter hair...</say> </character> <Narrator>The restaurant falls quiet as Lumine's story touches everyone present. Even Tartaglia's usual bravado seems subdued.</Narrator> <character name="Zhongli"> <action expression="Concern">Setting down his teacup with deliberate care</action> <say>Loss is a burden many of us carry. Time may reveal what we seek.</say> </character>`,
+    choices: []
+  },
+  {
+    id: 'tartaglia_path',
+    content: `<character name="Tartaglia"> <action expression="Very Happy">His eyes light up with excitement</action> <say>Now we're talking! I knew you had the spirit of a warrior!</say> <action expression="Confident">He stands up, stretching his arms</action> <say>How about we step outside? I promise to go easy on you... maybe.</say> </character> <character name="Zhongli"> <action expression="Annoyed">Sighing deeply</action> <say>Childe, perhaps we should finish our meal first. Violence can wait.</say> </character> <character name="Venti"> <action expression="Happy">Laughing melodiously</action> <say>Ehe! A warrior's feast deserves a warrior's song!</say> </character>`,
+    choices: []
+  },
+  {
+    id: 'venti_path',
+    content: `<character name="Venti"> <action expression="Very Happy">His face brightens with pure joy</action> <say>Ehe! A music lover! My heart sings just hearing those words!</say> <action expression="Happy">He begins to strum a gentle, haunting melody</action> <say>This is a song of travelers, of journeys that bring strangers together...</say> </character> <Narrator>The melody fills the air, weaving a spell of nostalgia and hope. Even the other patrons stop their conversations to listen.</Narrator> <character name="Lumine"> <action expression="Happy">Closing her eyes, a peaceful smile crossing her face</action> <say>Beautiful... it reminds me of home.</say> </character>`,
+    choices: []
+  },
+  {
+    id: 'zhongli_path',
+    content: `<character name="Zhongli"> <action expression="Thinking">His amber eyes seem to peer into ancient memories</action> <say>The contracts I speak of are not mere mortal agreements. They are woven into the very fabric of this land.</say> <action expression="Neutral">He takes a contemplative sip of tea</action> <say>Liyue Harbor sits at the crossroads of fate. Those who arrive here are rarely here by mere chance.</say> </character> <character name="Tartaglia"> <action expression="Thinking">Leaning forward with sudden interest</action> <say>You speak as if you know something we don't, old man...</say> </character> <Narrator>The air grows thick with unspoken mysteries, and you sense that your arrival has set ancient wheels in motion.</Narrator>`,
+    choices: []
   }
 ];
 
@@ -47,8 +67,8 @@ export async function GET(request: NextRequest) {
       
       function pushChunk() {
         if (index < content.length) {
-          // 模拟网络延迟，每次发送1-3个字符
-          const chunkSize = Math.min(Math.floor(Math.random() * 3) + 1, content.length - index);
+          // 增加每次发送的字符数量，减少延迟
+          const chunkSize = Math.min(Math.floor(Math.random() * 8) + 5, content.length - index);
           const chunk = content.slice(index, index + chunkSize);
           
           controller.enqueue(encoder.encode(JSON.stringify({
@@ -59,8 +79,8 @@ export async function GET(request: NextRequest) {
           
           index += chunkSize;
           
-          // 随机延迟 20-100ms
-          setTimeout(pushChunk, Math.random() * 80 + 20);
+          // 大幅减少延迟时间
+          setTimeout(pushChunk, Math.random() * 20 + 5);
         } else {
           // 发送完成信号和选择
           controller.enqueue(encoder.encode(JSON.stringify({
@@ -89,10 +109,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, choice, storyHistory } = await request.json();
+    const { prompt, choice, storyHistory, fastMode } = await request.json();
     
     // 根据用户输入选择相应的故事段落
-    let selectedSegment;
+    let selectedSegment = storySegments[0]; // 默认值
     
     if (!choice) {
       // 新故事开始
@@ -103,10 +123,22 @@ export async function POST(request: NextRequest) {
         case 'greet_friendly':
         case 'stay_silent':
         case 'ask_about_harbor':
-          selectedSegment = storySegments[1];
+          selectedSegment = storySegments[1]; // character_responses
+          break;
+        case 'ask_lumine':
+          selectedSegment = storySegments[2]; // lumine_path
+          break;
+        case 'challenge_tartaglia':
+          selectedSegment = storySegments[3]; // tartaglia_path
+          break;
+        case 'listen_venti':
+          selectedSegment = storySegments[4]; // venti_path
+          break;
+        case 'talk_zhongli':
+          selectedSegment = storySegments[5]; // zhongli_path
           break;
         default:
-          selectedSegment = storySegments[1];
+          selectedSegment = storySegments[1]; // 默认回到角色介绍
       }
     }
 
@@ -115,35 +147,57 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       start(controller) {
         const content = selectedSegment.content;
-        let index = 0;
         
-        function pushChunk() {
-          if (index < content.length) {
-            const chunkSize = Math.min(Math.floor(Math.random() * 3) + 1, content.length - index);
-            const chunk = content.slice(index, index + chunkSize);
-            
-            controller.enqueue(encoder.encode(JSON.stringify({
-              type: 'content',
-              data: chunk,
-              isComplete: false
-            }) + '\n'));
-            
-            index += chunkSize;
-            setTimeout(pushChunk, Math.random() * 80 + 20);
-          } else {
-            controller.enqueue(encoder.encode(JSON.stringify({
-              type: 'complete',
-              data: '',
-              isComplete: true,
-              choices: selectedSegment.choices
-            }) + '\n'));
-            
-            controller.close();
+        if (fastMode) {
+          // 快速模式：立即发送所有内容
+          controller.enqueue(encoder.encode(JSON.stringify({
+            type: 'content',
+            data: content,
+            isComplete: false
+          }) + '\n'));
+          
+          controller.enqueue(encoder.encode(JSON.stringify({
+            type: 'complete',
+            data: '',
+            isComplete: true,
+            choices: selectedSegment.choices
+          }) + '\n'));
+          
+          controller.close();
+        } else {
+          // 正常流式模式
+          let index = 0;
+          
+          function pushChunk() {
+            if (index < content.length) {
+              // 增加每次发送的字符数量，减少延迟
+              const chunkSize = Math.min(Math.floor(Math.random() * 8) + 5, content.length - index);
+              const chunk = content.slice(index, index + chunkSize);
+              
+              controller.enqueue(encoder.encode(JSON.stringify({
+                type: 'content',
+                data: chunk,
+                isComplete: false
+              }) + '\n'));
+              
+              index += chunkSize;
+              // 大幅减少延迟时间
+              setTimeout(pushChunk, Math.random() * 20 + 5);
+            } else {
+              controller.enqueue(encoder.encode(JSON.stringify({
+                type: 'complete',
+                data: '',
+                isComplete: true,
+                choices: selectedSegment.choices
+              }) + '\n'));
+              
+              controller.close();
+            }
           }
+          
+          // 减少初始延迟
+          setTimeout(pushChunk, 100);
         }
-        
-        // 添加一些初始延迟
-        setTimeout(pushChunk, 500);
       }
     });
 

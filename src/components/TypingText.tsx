@@ -97,7 +97,7 @@ export function TypingText({
       {/* 跳过提示 */}
       {allowSkip && !isComplete && (
         <div className="absolute bottom-0 right-0 text-xs text-gray-400 opacity-70">
-          点击或按任意键跳过
+          Click or press any key to skip
         </div>
       )}
     </div>

@@ -22,6 +22,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const [gameStarted, setGameStarted] = useState(false);
   const [storyHistory, setStoryHistory] = useState<string[]>([]);
   const [userPrompt, setUserPrompt] = useState('');
+  const [fastMode, setFastMode] = useState(false);
 
   // 当前显示的角色和表情
   const getCurrentCharacter = (): { name: CharacterName; emotion: EmotionType } | null => {
@@ -48,7 +49,8 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
         body: JSON.stringify({
           choice,
           prompt,
-          storyHistory
+          storyHistory,
+          fastMode
         }),
       });
 
@@ -139,21 +141,21 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
         <div className="max-w-2xl mx-auto p-8 text-center">
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-white mb-4">
-              AI 视觉小说冒险
+              AI Visual Novel Adventure
             </h1>
             <p className="text-gray-300 text-lg">
-              开始你的专属AI驱动故事之旅
+              Begin your personalized AI-driven story journey
             </p>
           </div>
           
           <div className="bg-black/40 rounded-lg p-6 backdrop-blur-sm">
             <label className="block text-white text-sm font-medium mb-3">
-              输入你的故事开头：
+              Enter your story beginning:
             </label>
             <textarea
               value={userPrompt}
               onChange={(e) => setUserPrompt(e.target.value)}
-              placeholder="例如：一个孤独的旅行者在沙漠中发现了一座隐藏的古老图书馆..."
+              placeholder="For example: A lone wanderer discovers a hidden ancient library in the middle of a desert..."
               className="w-full h-32 p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-cyan-400 focus:outline-none resize-none"
               maxLength={500}
             />
@@ -161,12 +163,25 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
               {userPrompt.length}/500
             </div>
             
+            {/* 快速模式切换 */}
+            <div className="mt-4 flex items-center justify-center space-x-3">
+              <label className="flex items-center space-x-2 text-gray-300 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fastMode}
+                  onChange={(e) => setFastMode(e.target.checked)}
+                  className="w-4 h-4 text-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-400 focus:ring-2"
+                />
+                <span>Fast mode (instant story loading)</span>
+              </label>
+            </div>
+            
             <button
               onClick={startGame}
               disabled={!userPrompt.trim() || isLoading}
               className="mt-4 w-full py-3 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium rounded-lg hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {isLoading ? '生成故事中...' : '开始冒险'}
+              {isLoading ? 'Generating Story...' : 'Begin Adventure'}
             </button>
           </div>
         </div>
@@ -214,7 +229,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
               {isLoading && (
                 <div className="text-center text-gray-400">
                   <div className="animate-spin w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto mb-2"></div>
-                  故事生成中...
+                  Generating story...
                 </div>
               )}
             </div>
@@ -235,6 +250,35 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
                     {choice.text}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 故事结束 */}
+        {choices.length === 0 && !isLoading && currentSegments.length > 0 && currentSegmentIndex >= currentSegments.length - 1 && (
+          <div className="flex-shrink-0 p-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="bg-black/60 rounded-lg p-8 backdrop-blur-sm border border-cyan-400/30">
+                <h3 className="text-2xl font-bold text-cyan-400 mb-4">
+                  Story Complete
+                </h3>
+                <p className="text-gray-300 mb-6">
+                  Your journey in Liyue Harbor has come to an end... for now.
+                </p>
+                <button
+                  onClick={() => {
+                    setGameStarted(false);
+                    setCurrentSegments([]);
+                    setCurrentSegmentIndex(0);
+                    setChoices([]);
+                    setStoryHistory([]);
+                    setUserPrompt('');
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-200"
+                >
+                  Start New Adventure
+                </button>
               </div>
             </div>
           </div>
