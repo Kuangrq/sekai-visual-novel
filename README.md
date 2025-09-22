@@ -4,8 +4,6 @@ This repository is my take‑home assignment for the Full‑Stack Engineer (Next
 
 The README is written to help reviewers validate that every required point in the assignment has been implemented (Bonus Points excluded).
 
----
-
 ## At a Glance (Requirements Fit)
 
 - Story initiation from a user prompt: implemented in the landing screen input and start button
@@ -15,8 +13,6 @@ The README is written to help reviewers validate that every required point in th
 - App Router + Next.js Route Handlers: implemented for the streaming API
 - TypeScript + modern styling (Tailwind CSS): implemented
 - Real-time structured XML parsing focus: implemented with a robust parser and streaming pipeline
-
----
 
 ## Demo Journey (How to Verify the Requirements Quickly)
 
@@ -38,8 +34,6 @@ The README is written to help reviewers validate that every required point in th
 
 4) You can optionally enable "Fast mode (instant story loading)" on the landing screen to load segments immediately (useful for reviewing functionality quickly).
 
----
-
 ## Technical Stack
 
 - Framework: Next.js (App Router, Next 15)
@@ -47,8 +41,6 @@ The README is written to help reviewers validate that every required point in th
 - Styling: Tailwind CSS
 - Backend: Next.js Route Handlers (Edge-style streaming via ReadableStream)
 - UI: React (functional components and hooks)
-
----
 
 ## Architecture Overview
 
@@ -67,8 +59,6 @@ The README is written to help reviewers validate that every required point in th
 - Assets
   - `public/assets/sample.xml`: Provided fixed XML used to mock LLM output
   - `public/characters/*`: Portraits per character and emotion (e.g., `/Lumine/Happy.png`)
-
----
 
 ## How Each Requirement Is Met
 
@@ -89,8 +79,6 @@ The README is written to help reviewers validate that every required point in th
   - A streaming parser class (`XMLStreamParser`) is also included to progressively parse partial XML if a true real-time progressive UI is desired.
   - The backend mocks an LLM by streaming XML characters in chunks; the frontend accumulates and parses reliably.
   - Partial/invalid XML is handled gracefully by accumulating until a coherent segment can be parsed.
-
----
 
 ## Implementation Details
 
@@ -119,8 +107,6 @@ The README is written to help reviewers validate that every required point in th
   - Avatar fallback UI when images cannot be loaded
   - Graceful UI states during loading
 
----
-
 ## Getting Started
 
 Prerequisites
@@ -138,8 +124,6 @@ Build & Start (Production)
 npm run build
 npm start
 ```
-
----
 
 ## Project Structure
 
@@ -185,15 +169,11 @@ visual-novel/
   - Smooth avatar transitions, modern responsive layout
   - Typing effect with an accessible skip interaction
 
----
-
 ## Assumptions & Constraints
 
 - Per the assignment, no real LLM integration is required; the backend mocks streaming from the provided XML.
 - The simplified parser is optimized for the provided format. A full XML DOM parser can be swapped in if broader XML is expected.
 - The included streaming parser lays groundwork for true progressive parsing if required in the future.
-
----
 
 ## Next Steps (**Bonus Points**)
 
