@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 interface TypingTextProps {
   text: string;
-  speed?: number; // 毫秒/字符
+  speed?: number; // milliseconds per character
   onComplete?: () => void;
   onSkip?: () => void;
   className?: string;
@@ -24,7 +24,7 @@ export function TypingText({
   const [isComplete, setIsComplete] = useState(false);
   const [isSkipped, setIsSkipped] = useState(false);
 
-  // 跳过动画，直接显示完整文本
+  // Skip animation and show complete text immediately
   const skipAnimation = useCallback(() => {
     if (!isComplete && allowSkip) {
       setIsSkipped(true);
@@ -36,7 +36,7 @@ export function TypingText({
     }
   }, [text, isComplete, allowSkip, onSkip, onComplete]);
 
-  // 键盘事件处理 - 按任意键跳过
+  // Handle keyboard events - any key press to skip
   useEffect(() => {
     const handleKeyPress = () => {
       if (allowSkip && !isComplete) {
@@ -48,14 +48,14 @@ export function TypingText({
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [skipAnimation, allowSkip, isComplete]);
 
-  // 点击事件处理
+  // Handle click events
   const handleClick = () => {
     if (allowSkip && !isComplete) {
       skipAnimation();
     }
   };
 
-  // 打字动画效果
+  // Typing animation effect
   useEffect(() => {
     if (isSkipped || currentIndex >= text.length) {
       if (!isComplete) {
@@ -73,7 +73,7 @@ export function TypingText({
     return () => clearTimeout(timeout);
   }, [currentIndex, text, speed, isSkipped, isComplete, onComplete]);
 
-  // 当文本改变时重置状态
+  // Reset state when text changes
   useEffect(() => {
     setDisplayedText('');
     setCurrentIndex(0);
@@ -94,7 +94,7 @@ export function TypingText({
         )}
       </p>
       
-      {/* 跳过提示 */}
+      {/* Skip hint */}
       {allowSkip && !isComplete && (
         <div className="absolute bottom-0 right-0 text-xs text-gray-400 opacity-70">
           Click or press any key to skip
@@ -104,12 +104,14 @@ export function TypingText({
   );
 }
 
-// 高级打字机组件 - 支持多段文本
+/**
+ * Advanced typing component that supports multiple text segments
+ */
 interface MultiTypingTextProps {
   segments: Array<{
     text: string;
     className?: string;
-    delay?: number; // 段落间延迟
+    delay?: number; // delay between segments
   }>;
   speed?: number;
   onAllComplete?: () => void;
@@ -130,12 +132,12 @@ export function MultiTypingText({
     setCompletedSegments(prev => [...prev, currentSegment.text]);
     
     if (currentSegmentIndex < segments.length - 1) {
-      // 移动到下一段
+      // Move to next segment
       setTimeout(() => {
         setCurrentSegmentIndex(prev => prev + 1);
       }, currentSegment.delay || 500);
     } else {
-      // 所有段落完成
+      // All segments completed
       onAllComplete?.();
     }
   }, [currentSegmentIndex, segments, onAllComplete]);
@@ -149,7 +151,7 @@ export function MultiTypingText({
     }
   }, [segments, allowSkip, onAllComplete]);
 
-  // 重置状态当segments改变时
+  // Reset state when segments change
   useEffect(() => {
     setCurrentSegmentIndex(0);
     setCompletedSegments([]);
@@ -159,7 +161,7 @@ export function MultiTypingText({
 
   return (
     <div className="space-y-2">
-      {/* 已完成的段落 */}
+      {/* Completed segments */}
       {completedSegments.map((text, index) => (
         <p 
           key={index} 
@@ -169,7 +171,7 @@ export function MultiTypingText({
         </p>
       ))}
       
-      {/* 当前正在打字的段落 */}
+      {/* Currently typing segment */}
       {currentSegmentIndex < segments.length && (
         <TypingText
           text={segments[currentSegmentIndex].text}

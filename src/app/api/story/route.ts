@@ -1,6 +1,12 @@
+/**
+ * Story API Route
+ * Handles streaming story content and user choice processing
+ * Simulates LLM responses with predefined story segments
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 
-// 模拟的故事数据
+// Mock story data for demonstration
 const storySegments = [
   {
     id: 'intro',
@@ -43,19 +49,21 @@ const storySegments = [
   }
 ];
 
+/**
+ * GET endpoint for story retrieval (legacy support)
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const storyId = searchParams.get('id') || 'intro';
-  // const choice = searchParams.get('choice'); // 暂时未使用
 
-  // 根据选择确定返回的故事段落
+  // Find appropriate story segment
   let storySegment = storySegments.find(s => s.id === storyId);
   
   if (!storySegment) {
-    storySegment = storySegments[0]; // 默认返回开头
+    storySegment = storySegments[0]; // Default to intro
   }
 
-  // 创建流式响应
+  // Create streaming response
   const encoder = new TextEncoder();
   
   const stream = new ReadableStream({
@@ -65,7 +73,7 @@ export async function GET(request: NextRequest) {
       
       function pushChunk() {
         if (index < content.length) {
-          // 增加每次发送的字符数量，减少延迟
+          // Send larger chunks with reduced delay for better performance
           const chunkSize = Math.min(Math.floor(Math.random() * 8) + 5, content.length - index);
           const chunk = content.slice(index, index + chunkSize);
           
@@ -76,11 +84,9 @@ export async function GET(request: NextRequest) {
           }) + '\n'));
           
           index += chunkSize;
-          
-          // 大幅减少延迟时间
           setTimeout(pushChunk, Math.random() * 20 + 5);
         } else {
-          // 发送完成信号和选择
+          // Send completion signal with choices
           controller.enqueue(encoder.encode(JSON.stringify({
             type: 'complete',
             data: '',
@@ -105,19 +111,22 @@ export async function GET(request: NextRequest) {
   });
 }
 
+/**
+ * POST endpoint for interactive story progression
+ * Handles user choices and returns appropriate story segments
+ */
 export async function POST(request: NextRequest) {
   try {
     const { choice, fastMode } = await request.json();
-    // const { prompt, storyHistory } = await request.json(); // 暂时未使用
     
-    // 根据用户输入选择相应的故事段落
-    let selectedSegment = storySegments[0]; // 默认值
+    // Select appropriate story segment based on user choice
+    let selectedSegment = storySegments[0]; // Default to intro
     
     if (!choice) {
-      // 新故事开始
+      // New story beginning
       selectedSegment = storySegments[0];
     } else {
-      // 根据用户选择返回相应内容
+      // Route to appropriate story path based on choice
       switch (choice) {
         case 'greet_friendly':
         case 'stay_silent':
@@ -137,7 +146,7 @@ export async function POST(request: NextRequest) {
           selectedSegment = storySegments[5]; // zhongli_path
           break;
         default:
-          selectedSegment = storySegments[1]; // 默认回到角色介绍
+          selectedSegment = storySegments[1]; // Fallback to character intro
       }
     }
 
@@ -148,7 +157,7 @@ export async function POST(request: NextRequest) {
         const content = selectedSegment.content;
         
         if (fastMode) {
-          // 快速模式：立即发送所有内容
+          // Fast mode: send all content immediately
           controller.enqueue(encoder.encode(JSON.stringify({
             type: 'content',
             data: content,
@@ -164,12 +173,12 @@ export async function POST(request: NextRequest) {
           
           controller.close();
         } else {
-          // 正常流式模式
+          // Normal streaming mode with typing effect
           let index = 0;
           
           function pushChunk() {
             if (index < content.length) {
-              // 增加每次发送的字符数量，减少延迟
+              // Send optimized chunks for better performance
               const chunkSize = Math.min(Math.floor(Math.random() * 8) + 5, content.length - index);
               const chunk = content.slice(index, index + chunkSize);
               
@@ -180,7 +189,6 @@ export async function POST(request: NextRequest) {
               }) + '\n'));
               
               index += chunkSize;
-              // 大幅减少延迟时间
               setTimeout(pushChunk, Math.random() * 20 + 5);
             } else {
               controller.enqueue(encoder.encode(JSON.stringify({
@@ -194,7 +202,7 @@ export async function POST(request: NextRequest) {
             }
           }
           
-          // 减少初始延迟
+          // Minimal initial delay
           setTimeout(pushChunk, 100);
         }
       }

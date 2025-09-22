@@ -1,4 +1,7 @@
-// XML流式解析器 - 处理LLM返回的结构化对话数据
+/**
+ * XML Stream Parser for processing structured dialogue data from LLM responses
+ * Handles real-time parsing of character conversations and narrative text
+ */
 
 export interface Character {
   name: string;
@@ -69,9 +72,8 @@ export class XMLStreamParser {
   }
 
   private handleTagStart(index: number): void {
-    // 查找标签结束位置
     const tagEndIndex = this.buffer.indexOf('>', index);
-    if (tagEndIndex === -1) return; // 标签未完整
+    if (tagEndIndex === -1) return; // Incomplete tag
 
     const tagContent = this.buffer.slice(index + 1, tagEndIndex);
     this.parseTag(tagContent);
@@ -82,10 +84,8 @@ export class XMLStreamParser {
     this.isInTag = false;
     
     if (this.tagName.startsWith('/')) {
-      // 结束标签
       this.handleClosingTag();
     } else {
-      // 开始标签
       this.handleOpeningTag();
     }
   }
@@ -104,7 +104,7 @@ export class XMLStreamParser {
     this.tagName = parts[0].toLowerCase();
     this.attributes = {};
 
-    // 解析属性
+    // Parse attributes
     for (let i = 1; i < parts.length; i++) {
       const attrPart = parts[i];
       const equalIndex = attrPart.indexOf('=');
@@ -142,17 +142,17 @@ export class XMLStreamParser {
         break;
       
       case 'say':
-        // 开始收集对话文本
+        // Start collecting dialogue text
         break;
       
       case 'choice':
-        // 处理选择项
+        // Handle choice options
         break;
     }
   }
 
   private handleClosingTag(): void {
-    const closingTagName = this.tagName.slice(1); // 移除 '/'
+    const closingTagName = this.tagName.slice(1); // Remove '/'
     
     switch (closingTagName) {
       case 'narrator':
@@ -166,13 +166,13 @@ export class XMLStreamParser {
       
       case 'action':
       case 'say':
-        // 处理动作或对话结束
+        // Handle end of action or dialogue tags
         break;
     }
   }
 
   private isBufferComplete(): boolean {
-    // 简单检查是否包含完整的XML结构
+    // Simple check for complete XML structure
     return this.buffer.includes('</character>') || 
            this.buffer.includes('</narrator>') ||
            this.buffer.includes('</choices>');
@@ -189,7 +189,9 @@ export class XMLStreamParser {
   }
 }
 
-// 辅助函数：从XML字符串中提取角色和对话信息
+/**
+ * Helper function to extract character and dialogue information from XML string
+ */
 export function parseXMLToSegments(xmlString: string): {
   segments: ParsedSegment[];
   choices: Choice[];
@@ -202,24 +204,24 @@ export function parseXMLToSegments(xmlString: string): {
   };
 }
 
-// 简化的解析函数，用于处理现有的sample.xml格式
+/**
+ * Simplified parsing function for processing sample.xml format
+ * Uses regex matching for quick extraction of story segments
+ */
 export function parseSimpleXML(xmlString: string): ParsedSegment[] {
   const segments: ParsedSegment[] = [];
   
   if (!xmlString || xmlString.trim() === '') {
-    console.warn('Empty XML string provided to parseSimpleXML');
     return segments;
   }
   
-  console.log('Parsing XML string:', xmlString);
-  
-  // 使用正则表达式匹配不同的标签
+  // Define regex patterns for different XML tags
   const narratorRegex = /<Narrator>(.*?)<\/Narrator>/gs;
   const characterRegex = /<character name="([^"]+)">(.*?)<\/character>/gs;
   const actionRegex = /<action expression="([^"]+)">([^<]*)<\/action>/g;
   const sayRegex = /<say>([^<]*)<\/say>/g;
   
-  // 处理旁白
+  // Process narrator segments
   let match;
   while ((match = narratorRegex.exec(xmlString)) !== null) {
     segments.push({
@@ -228,32 +230,27 @@ export function parseSimpleXML(xmlString: string): ParsedSegment[] {
     });
   }
   
-  // 处理角色对话 - 改进逻辑以处理多个action和say标签
+  // Process character dialogue - improved logic to handle multiple action and say tags
   const characterMatches = [...xmlString.matchAll(characterRegex)];
   
   for (const characterMatch of characterMatches) {
     const characterName = characterMatch[1];
     const characterContent = characterMatch[2];
     
-    console.log(`Processing character: ${characterName}`);
-    console.log(`Character content: ${characterContent}`);
-    
-    // 重置正则表达式
+    // Reset regex indices
     actionRegex.lastIndex = 0;
     sayRegex.lastIndex = 0;
     
     const actionMatches = [...characterContent.matchAll(actionRegex)];
     const sayMatches = [...characterContent.matchAll(sayRegex)];
     
-    console.log(`Found ${actionMatches.length} actions and ${sayMatches.length} dialogues`);
-    
-    // 为每个对话创建一个段落
+    // Create a segment for each dialogue
     for (let i = 0; i < sayMatches.length; i++) {
       const dialogue = sayMatches[i][1].trim();
       let expression = 'neutral';
       let action = '';
       
-      // 找到对应的动作（如果有的话）
+      // Find corresponding action if available
       if (i < actionMatches.length) {
         expression = actionMatches[i][1].toLowerCase();
         action = actionMatches[i][2].trim();
@@ -271,6 +268,5 @@ export function parseSimpleXML(xmlString: string): ParsedSegment[] {
     }
   }
   
-  console.log('Final parsed segments:', segments);
   return segments;
 }

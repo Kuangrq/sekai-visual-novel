@@ -3,10 +3,15 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-// 支持的角色名称
+/**
+ * Character Avatar Component
+ * Displays character portraits with emotion-based expressions and smooth transitions
+ */
+
+// Supported character names
 export type CharacterName = 'Lumine' | 'Tartaglia' | 'Venti' | 'Zhongli';
 
-// 支持的表情状态
+// Supported emotion states
 export type EmotionType = 
   | 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised' | 'thinking' 
   | 'confident' | 'concern' | 'annoyed' | 'blushing' | 'crying' 
@@ -20,7 +25,7 @@ interface CharacterAvatarProps {
   showTransition?: boolean;
 }
 
-// 表情名称映射到文件名
+// Emotion name to filename mapping
 const emotionMap: Record<string, string> = {
   'neutral': 'Neutral',
   'happy': 'Happy',
@@ -37,12 +42,12 @@ const emotionMap: Record<string, string> = {
   'fear': 'Fear',
   'deeply in love': 'Deeply In Love',
   'very happy': 'Very Happy',
-  // 添加更多可能的表情映射
+  // Alternative naming conventions
   'very_happy': 'Very Happy',
   'deeply_in_love': 'Deeply In Love'
 };
 
-// 尺寸样式配置
+// Size style configurations
 const sizeStyles = {
   small: 'w-16 h-16',
   medium: 'w-24 h-24',
@@ -63,18 +68,18 @@ export function CharacterAvatar({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // 构建图片路径
+  // Build image path based on character and emotion
   const getImagePath = (char: CharacterName, emo: EmotionType): string => {
     const emotionFile = emotionMap[emo.toLowerCase()] || emotionMap.neutral;
     return `/characters/${char}/${emotionFile}.png`;
   };
 
-  // 处理表情变化动画
+  // Handle emotion transition animation
   useEffect(() => {
     if (emotion !== currentEmotion && showTransition) {
       setIsTransitioning(true);
       
-      // 短暂延迟后切换表情
+      // Brief delay before switching emotion
       const timeout = setTimeout(() => {
         setCurrentEmotion(emotion);
         setIsTransitioning(false);
@@ -86,13 +91,13 @@ export function CharacterAvatar({
     }
   }, [emotion, currentEmotion, showTransition]);
 
-  // 处理图片加载错误
+  // Handle image loading errors
   const handleImageError = () => {
     setImageError(true);
     console.warn(`Failed to load avatar: ${getImagePath(characterName, currentEmotion)}`);
   };
 
-  // 如果图片加载失败，显示默认头像
+  // Fallback avatar when image fails to load
   if (imageError) {
     return (
       <div className={`${sizeStyles[size]} ${className} bg-gray-700 rounded-full flex items-center justify-center`}>
@@ -106,7 +111,7 @@ export function CharacterAvatar({
 
   return (
     <div className={`relative ${sizeStyles[size]} ${className}`}>
-      {/* 角色头像 */}
+      {/* Character avatar */}
       <div 
         className={`relative w-full h-full rounded-full overflow-hidden border-2 border-cyan-400 shadow-lg transition-all duration-300 ${
           isTransitioning ? 'opacity-70 scale-95' : 'opacity-100 scale-100'
@@ -121,18 +126,18 @@ export function CharacterAvatar({
           priority={size === 'large'}
         />
         
-        {/* 发光效果 */}
+        {/* Glow effect */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
       </div>
 
-      {/* 角色名称标签 */}
+      {/* Character name label */}
       <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
         <div className="bg-black/80 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
           {characterName}
         </div>
       </div>
 
-      {/* 表情状态指示器（开发模式） */}
+      {/* Emotion state indicator (development mode only) */}
       {process.env.NODE_ENV === 'development' && (
         <div className="absolute -top-2 -right-2">
           <div className="bg-cyan-500 text-white text-xs px-1 py-0.5 rounded text-center min-w-12">
@@ -144,7 +149,9 @@ export function CharacterAvatar({
   );
 }
 
-// 角色头像切换器 - 支持多个角色同时显示
+/**
+ * Character switcher component - supports displaying multiple characters simultaneously
+ */
 interface CharacterSwitcherProps {
   characters: Array<{
     name: CharacterName;
@@ -186,7 +193,9 @@ export function CharacterSwitcher({
   );
 }
 
-// 角色表情预览组件（用于开发和测试）
+/**
+ * Character emotion preview component (for development and testing)
+ */
 export function EmotionPreview({ characterName }: { characterName: CharacterName }) {
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionType>('neutral');
   

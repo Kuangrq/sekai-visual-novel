@@ -1,3 +1,8 @@
+/**
+ * Visual Novel Component
+ * Main component that orchestrates the entire visual novel experience
+ * Handles story flow, character display, user choices, and streaming content
+ */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -24,7 +29,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const [userPrompt, setUserPrompt] = useState('');
   const [fastMode, setFastMode] = useState(false);
 
-  // 当前显示的角色和表情
+  // Get currently displayed character and emotion
   const getCurrentCharacter = (): { name: CharacterName; emotion: EmotionType } | null => {
     const currentSegment = currentSegments[currentSegmentIndex];
     if (currentSegment?.type === 'character') {
@@ -36,7 +41,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     return null;
   };
 
-  // 获取故事内容
+  // Fetch story content from API with streaming support
   const fetchStory = useCallback(async (choice?: string, prompt?: string) => {
     setIsLoading(true);
     
@@ -61,7 +66,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let xmlContent = ''; // 累积完整的XML内容
+      let xmlContent = ''; // Accumulate complete XML content
 
       while (true) {
         const { done, value } = await reader.read();
@@ -78,15 +83,10 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
               const data = JSON.parse(line);
               
               if (data.type === 'content') {
-                // 累积接收到的XML内容
                 xmlContent += data.data;
-                console.log('Received chunk:', data.data);
-                console.log('Total XML so far:', xmlContent);
               } else if (data.type === 'complete') {
-                // 故事段落完成，解析完整的XML
-                console.log('Parsing complete XML:', xmlContent);
+                // Story segment complete, parse full XML
                 const segments = parseSimpleXML(xmlContent);
-                console.log('Parsed segments:', segments);
                 setCurrentSegments(segments);
                 setCurrentSegmentIndex(0);
                 setChoices(data.choices || []);
@@ -105,34 +105,29 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     }
   }, [storyHistory, onStoryUpdate]);
 
-  // 开始游戏
+  // Start the game with user's initial prompt
   const startGame = async () => {
     if (!userPrompt.trim()) return;
     
     setGameStarted(true);
     setStoryHistory([userPrompt]);
-    
-    // 调试：测试XML解析
-    console.log('Starting game with prompt:', userPrompt);
-    
     await fetchStory(undefined, userPrompt);
   };
 
-  // 处理用户选择
+  // Handle user choice selection
   const handleChoice = async (choiceId: string, choiceText: string) => {
     setStoryHistory(prev => [...prev, choiceText]);
     setChoices([]);
     await fetchStory(choiceId);
   };
 
-  // 处理当前段落完成
+  // Handle completion of current text segment
   const handleSegmentComplete = () => {
     if (currentSegmentIndex < currentSegments.length - 1) {
       setCurrentSegmentIndex(prev => prev + 1);
     }
   };
 
-  // 当前角色信息
   const currentCharacter = getCurrentCharacter();
 
   if (!gameStarted) {
@@ -163,7 +158,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
               {userPrompt.length}/500
             </div>
             
-            {/* 快速模式切换 */}
+            {/* Fast mode toggle */}
             <div className="mt-4 flex items-center justify-center space-x-3">
               <label className="flex items-center space-x-2 text-gray-300 text-sm cursor-pointer">
                 <input
@@ -191,14 +186,14 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black">
-      {/* 背景图片 */}
+      {/* Background image */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-30"
         style={{ backgroundImage: 'url(/assets/background.jpg)' }}
       />
       
       <div className="relative z-10 min-h-screen flex flex-col">
-        {/* 角色显示区域 */}
+        {/* Character display area */}
         {currentCharacter && (
           <div className="flex-shrink-0 pt-8 pb-6">
             <div className="flex justify-center">
@@ -213,7 +208,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           </div>
         )}
         
-        {/* 故事文本区域 */}
+        {/* Story text area */}
         <div className="flex-grow flex items-end">
           <div className="w-full max-w-4xl mx-auto p-6">
             <div className="bg-black/70 rounded-lg p-6 backdrop-blur-sm border border-cyan-400/30">
@@ -237,7 +232,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           </div>
         </div>
         
-        {/* 选择区域 */}
+        {/* Choice selection area */}
         {choices.length > 0 && !isLoading && (
           <div className="flex-shrink-0 p-6">
             <div className="max-w-4xl mx-auto">
@@ -256,7 +251,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           </div>
         )}
 
-        {/* 故事结束 */}
+        {/* Story completion */}
         {choices.length === 0 && !isLoading && currentSegments.length > 0 && currentSegmentIndex >= currentSegments.length - 1 && (
           <div className="flex-shrink-0 p-6">
             <div className="max-w-4xl mx-auto text-center">
