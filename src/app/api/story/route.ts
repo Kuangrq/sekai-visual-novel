@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import path from 'path';
 
 // 模拟的故事数据
 const storySegments = [
@@ -48,7 +46,7 @@ const storySegments = [
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const storyId = searchParams.get('id') || 'intro';
-  const choice = searchParams.get('choice');
+  // const choice = searchParams.get('choice'); // 暂时未使用
 
   // 根据选择确定返回的故事段落
   let storySegment = storySegments.find(s => s.id === storyId);
@@ -109,7 +107,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, choice, storyHistory, fastMode } = await request.json();
+    const { choice, fastMode } = await request.json();
+    // const { prompt, storyHistory } = await request.json(); // 暂时未使用
     
     // 根据用户输入选择相应的故事段落
     let selectedSegment = storySegments[0]; // 默认值
@@ -218,21 +217,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 获取示例XML数据的辅助端点
-export async function GET_SAMPLE() {
-  try {
-    const samplePath = path.join(process.cwd(), 'public', 'assets', 'sample.xml');
-    const sampleXML = await readFile(samplePath, 'utf-8');
-    
-    return NextResponse.json({
-      success: true,
-      data: sampleXML
-    });
-  } catch (error) {
-    console.error('Failed to read sample XML:', error);
-    return NextResponse.json(
-      { error: 'Failed to load sample data' },
-      { status: 500 }
-    );
-  }
-}
