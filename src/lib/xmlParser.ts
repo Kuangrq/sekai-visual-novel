@@ -80,7 +80,7 @@ export class XMLStreamParser {
     this.isInTag = true;
   }
 
-  private handleTagEnd(index: number): void {
+  private handleTagEnd(_index: number): void {
     this.isInTag = false;
     
     if (this.tagName.startsWith('/')) {

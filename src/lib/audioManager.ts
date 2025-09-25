@@ -38,7 +38,7 @@ class AudioManager {
     if (this.isInitialized) return;
 
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       this.isInitialized = true;
       
       // Load settings from localStorage
@@ -263,7 +263,7 @@ class AudioManager {
    * Check if audio is supported
    */
   isSupported(): boolean {
-    return !!(window.AudioContext || (window as any).webkitAudioContext);
+    return !!(window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
   }
 
   /**

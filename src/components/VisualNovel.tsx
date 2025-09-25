@@ -11,6 +11,9 @@ import { TypingText } from './TypingText';
 import { parseSimpleXML, ParsedSegment } from '@/lib/xmlParser';
 import { audioManager } from '@/lib/audioManager';
 import { AudioControls } from './AudioControls';
+import { ConversationHistory, HistoryButton } from './ConversationHistory';
+import { SaveManagerComponent, SaveLoadButton } from './SaveManager';
+import { saveManager, GameSave } from '@/lib/saveManager';
 
 interface Choice {
   id: string;
@@ -30,6 +33,13 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const [storyHistory, setStoryHistory] = useState<string[]>([]);
   const [userPrompt, setUserPrompt] = useState('');
   const [fastMode, setFastMode] = useState(false);
+  
+  // History and save state
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSaveManager, setShowSaveManager] = useState(false);
+  const [hasHistory, setHasHistory] = useState(false);
+  const [hasSavedProgress, setHasSavedProgress] = useState(false);
+  const [playStartTime, setPlayStartTime] = useState<Date | null>(null);
 
   // Get currently displayed character and emotion
   const getCurrentCharacter = (): { name: CharacterName; emotion: EmotionType } | null => {
@@ -105,7 +115,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [storyHistory, onStoryUpdate]);
+  }, [storyHistory, onStoryUpdate, fastMode]);
 
   // Start the game with user's initial prompt
   const startGame = async () => {
@@ -114,6 +124,15 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     audioManager.playSound('notification'); // Play game start sound
     setGameStarted(true);
     setStoryHistory([userPrompt]);
+    setPlayStartTime(new Date());
+    
+    // Add user input to conversation history
+    saveManager.addToHistory({
+      type: 'user_input',
+      content: userPrompt,
+    });
+    setHasHistory(true);
+    
     await fetchStory(undefined, userPrompt);
   };
 
@@ -122,15 +141,34 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     audioManager.playSound('select'); // Play selection sound
     setStoryHistory(prev => [...prev, choiceText]);
     setChoices([]);
+    
+    // Add choice to conversation history
+    saveManager.addToHistory({
+      type: 'user_choice',
+      content: choiceText,
+    });
+    
     await fetchStory(choiceId);
   };
 
   // Handle completion of current text segment
   const handleSegmentComplete = () => {
+    const currentSegment = currentSegments[currentSegmentIndex];
+    
+    // Add completed segment to conversation history
+    if (currentSegment) {
+      saveManager.addToHistory({
+        type: 'story_segment',
+        content: currentSegment.text,
+        character: currentSegment.type === 'character' ? currentSegment.name : undefined,
+        emotion: currentSegment.type === 'character' ? currentSegment.expression : undefined,
+        segmentData: currentSegment,
+      });
+    }
+    
     if (currentSegmentIndex < currentSegments.length - 1) {
       // Play transition sound when moving to next segment
       const nextSegment = currentSegments[currentSegmentIndex + 1];
-      const currentSegment = currentSegments[currentSegmentIndex];
       
       // Play character transition sound if character changes
       if (nextSegment.type === 'character' && currentSegment.type === 'character' && 
@@ -142,13 +180,116 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     }
   };
 
+  // Initialize saved progress state on client side
+  useEffect(() => {
+    // Check for saved progress only on client side to avoid hydration mismatch
+    setHasSavedProgress(!!saveManager.loadAutoSave());
+  }, []);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (gameStarted && currentSegments.length > 0) {
+      const gameState = {
+        userPrompt,
+        storyHistory,
+        conversationHistory: saveManager.getConversationHistory(),
+        currentSegmentIndex,
+        currentSegments,
+        choices,
+        gameStarted,
+        fastMode,
+      };
+      
+      const playTime = playStartTime ? Math.floor((Date.now() - playStartTime.getTime()) / 1000) : 0;
+      saveManager.autoSave(gameState, playTime);
+      setHasSavedProgress(true);
+    }
+  }, [gameStarted, currentSegments, currentSegmentIndex, choices, storyHistory, userPrompt, fastMode, playStartTime]);
+
+  // Save/Load handlers
+  const handleSave = (gameState: GameSave['gameState']) => {
+    audioManager.playSound('notification');
+    // Save is handled by the SaveManager component
+  };
+
+  const handleLoad = (save: GameSave) => {
+    audioManager.playSound('notification');
+    const state = save.gameState;
+    
+    // Restore game state
+    setUserPrompt(state.userPrompt);
+    setStoryHistory(state.storyHistory);
+    setCurrentSegments(state.currentSegments);
+    setCurrentSegmentIndex(state.currentSegmentIndex);
+    setChoices(state.choices);
+    setGameStarted(state.gameStarted);
+    setFastMode(state.fastMode);
+    setPlayStartTime(new Date(Date.now() - save.playTime * 1000)); // Adjust start time
+    setHasHistory(true);
+    setHasSavedProgress(true);
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showHistory) setShowHistory(false);
+        if (showSaveManager) setShowSaveManager(false);
+      }
+      
+      // Ctrl+H for history
+      if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        if (hasHistory && !showSaveManager) {
+          setShowHistory(!showHistory);
+        }
+      }
+      
+      // Ctrl+S for save manager
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (gameStarted && !showHistory) {
+          setShowSaveManager(!showSaveManager);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showHistory, showSaveManager, hasHistory, gameStarted]);
+
+  // Check for existing history on component mount
+  useEffect(() => {
+    const existingHistory = saveManager.getConversationHistory();
+    setHasHistory(existingHistory.length > 0);
+  }, []);
+
   const currentCharacter = getCurrentCharacter();
+
+  const currentGameState = gameStarted ? {
+    userPrompt,
+    storyHistory,
+    conversationHistory: saveManager.getConversationHistory(),
+    currentSegmentIndex,
+    currentSegments,
+    choices,
+    gameStarted,
+    fastMode,
+  } : undefined;
 
   if (!gameStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black flex items-center justify-center">
-        {/* Audio Controls */}
-        <div className="absolute top-4 right-4 z-50">
+        {/* Control panel */}
+        <div className="absolute top-4 right-4 z-50 flex space-x-2">
+          <HistoryButton 
+            onClick={() => setShowHistory(true)} 
+            hasHistory={hasHistory} 
+          />
+          <SaveLoadButton 
+            onClick={() => setShowSaveManager(true)} 
+            hasProgress={hasSavedProgress} 
+          />
           <AudioControls />
         </div>
         
@@ -206,8 +347,16 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black">
-      {/* Audio Controls */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Control panel */}
+      <div className="absolute top-4 right-4 z-50 flex space-x-2">
+        <HistoryButton 
+          onClick={() => setShowHistory(true)} 
+          hasHistory={hasHistory} 
+        />
+        <SaveLoadButton 
+          onClick={() => setShowSaveManager(true)} 
+          hasProgress={hasSavedProgress || gameStarted} 
+        />
         <AudioControls />
       </div>
       
@@ -308,6 +457,21 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           </div>
         )}
       </div>
+      
+      {/* History Modal */}
+      <ConversationHistory
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
+      
+      {/* Save Manager Modal */}
+      <SaveManagerComponent
+        isOpen={showSaveManager}
+        onClose={() => setShowSaveManager(false)}
+        onSave={handleSave}
+        onLoad={handleLoad}
+        currentGameState={currentGameState}
+      />
     </div>
   );
 }
