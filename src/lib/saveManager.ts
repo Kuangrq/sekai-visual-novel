@@ -122,7 +122,7 @@ class SaveManager {
       if (saved) {
         const saves = JSON.parse(saved);
         // Convert timestamp strings back to Date objects
-        return saves.map((save: any) => ({
+        return saves.map((save: Omit<GameSave, 'timestamp'> & { timestamp: string }) => ({
           ...save,
           timestamp: new Date(save.timestamp)
         }));
@@ -207,7 +207,7 @@ class SaveManager {
       const saved = localStorage.getItem(this.HISTORY_KEY);
       if (saved) {
         const history = JSON.parse(saved);
-        return history.map((entry: any) => ({
+        return history.map((entry: Omit<ConversationEntry, 'timestamp'> & { timestamp: string }) => ({
           ...entry,
           timestamp: new Date(entry.timestamp)
         }));
@@ -283,7 +283,7 @@ class SaveManager {
       storageSize += new Blob([localStorage.getItem(this.SAVE_KEY) || '']).size;
       storageSize += new Blob([localStorage.getItem(this.HISTORY_KEY) || '']).size;
       storageSize += new Blob([localStorage.getItem(this.AUTO_SAVE_KEY) || '']).size;
-    } catch (error) {
+    } catch {
       // Fallback estimation
       storageSize = JSON.stringify({ saves, history, autoSave }).length;
     }

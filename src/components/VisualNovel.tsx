@@ -207,7 +207,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   }, [gameStarted, currentSegments, currentSegmentIndex, choices, storyHistory, userPrompt, fastMode, playStartTime]);
 
   // Save/Load handlers
-  const handleSave = (gameState: GameSave['gameState']) => {
+  const handleSave = (_gameState: GameSave['gameState']) => {
     audioManager.playSound('notification');
     // Save is handled by the SaveManager component
   };

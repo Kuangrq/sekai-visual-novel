@@ -53,7 +53,7 @@ export function SaveManagerComponent({
     audioManager.playSound('notification');
     
     try {
-      const saveId = saveManager.saveGame({
+      saveManager.saveGame({
         name: newSaveName.trim(),
         gameState: currentGameState,
         playTime: 0, // TODO: Implement play time tracking
@@ -65,7 +65,7 @@ export function SaveManagerComponent({
       
       // Show success feedback
       alert('Game saved successfully!');
-    } catch (error) {
+    } catch {
       alert('Failed to save game. Please try again.');
     }
   };
