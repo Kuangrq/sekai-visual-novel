@@ -9,6 +9,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { CharacterAvatar, CharacterName, EmotionType } from './CharacterAvatar';
 import { TypingText } from './TypingText';
 import { parseSimpleXML, ParsedSegment } from '@/lib/xmlParser';
+import { audioManager } from '@/lib/audioManager';
+import { AudioControls } from './AudioControls';
 
 interface Choice {
   id: string;
@@ -109,6 +111,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const startGame = async () => {
     if (!userPrompt.trim()) return;
     
+    audioManager.playSound('notification'); // Play game start sound
     setGameStarted(true);
     setStoryHistory([userPrompt]);
     await fetchStory(undefined, userPrompt);
@@ -116,6 +119,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
 
   // Handle user choice selection
   const handleChoice = async (choiceId: string, choiceText: string) => {
+    audioManager.playSound('select'); // Play selection sound
     setStoryHistory(prev => [...prev, choiceText]);
     setChoices([]);
     await fetchStory(choiceId);
@@ -124,6 +128,16 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   // Handle completion of current text segment
   const handleSegmentComplete = () => {
     if (currentSegmentIndex < currentSegments.length - 1) {
+      // Play transition sound when moving to next segment
+      const nextSegment = currentSegments[currentSegmentIndex + 1];
+      const currentSegment = currentSegments[currentSegmentIndex];
+      
+      // Play character transition sound if character changes
+      if (nextSegment.type === 'character' && currentSegment.type === 'character' && 
+          nextSegment.name !== currentSegment.name) {
+        audioManager.playSound('character_enter');
+      }
+      
       setCurrentSegmentIndex(prev => prev + 1);
     }
   };
@@ -133,6 +147,11 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   if (!gameStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black flex items-center justify-center">
+        {/* Audio Controls */}
+        <div className="absolute top-4 right-4 z-50">
+          <AudioControls />
+        </div>
+        
         <div className="max-w-2xl mx-auto p-8 text-center">
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-white mb-4">
@@ -173,6 +192,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
             
             <button
               onClick={startGame}
+              onMouseEnter={() => audioManager.playSound('hover')} // Play hover sound
               disabled={!userPrompt.trim() || isLoading}
               className="mt-4 w-full py-3 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium rounded-lg hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
@@ -186,6 +206,11 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black">
+      {/* Audio Controls */}
+      <div className="absolute top-4 right-4 z-50">
+        <AudioControls />
+      </div>
+      
       {/* Background image */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-30"
@@ -241,6 +266,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
                   <button
                     key={choice.id}
                     onClick={() => handleChoice(choice.id, choice.text)}
+                    onMouseEnter={() => audioManager.playSound('hover')} // Play hover sound
                     className="w-full p-4 bg-black/60 hover:bg-black/80 text-white rounded-lg border border-cyan-400/30 hover:border-cyan-400 transition-all duration-200 text-left backdrop-blur-sm"
                   >
                     {choice.text}
@@ -264,6 +290,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
                 </p>
                 <button
                   onClick={() => {
+                    audioManager.playSound('notification'); // Play restart sound
                     setGameStarted(false);
                     setCurrentSegments([]);
                     setCurrentSegmentIndex(0);
@@ -271,6 +298,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
                     setStoryHistory([]);
                     setUserPrompt('');
                   }}
+                  onMouseEnter={() => audioManager.playSound('hover')} // Play hover sound
                   className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-200"
                 >
                   Start New Adventure

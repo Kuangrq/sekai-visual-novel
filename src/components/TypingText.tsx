@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { audioManager } from '@/lib/audioManager';
 
 interface TypingTextProps {
   text: string;
@@ -27,6 +28,7 @@ export function TypingText({
   // Skip animation and show complete text immediately
   const skipAnimation = useCallback(() => {
     if (!isComplete && allowSkip) {
+      audioManager.playSound('select'); // Play skip sound
       setIsSkipped(true);
       setDisplayedText(text);
       setCurrentIndex(text.length);
@@ -55,7 +57,7 @@ export function TypingText({
     }
   };
 
-  // Typing animation effect
+  // Typing animation effect with sound
   useEffect(() => {
     if (isSkipped || currentIndex >= text.length) {
       if (!isComplete) {
@@ -66,7 +68,15 @@ export function TypingText({
     }
 
     const timeout = setTimeout(() => {
-      setDisplayedText(prev => prev + text[currentIndex]);
+      const char = text[currentIndex];
+      setDisplayedText(prev => prev + char);
+      
+      // Play typing sound for visible characters (not spaces or punctuation)
+      if (char && char.trim() && /[a-zA-Z0-9\u4e00-\u9fff]/.test(char) && Math.random() > 0.4) { 
+        // 60% chance to play sound for letters, numbers, and Chinese characters
+        audioManager.playSound('typing');
+      }
+      
       setCurrentIndex(prev => prev + 1);
     }, speed);
 
