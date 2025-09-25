@@ -74,16 +74,20 @@ export function CharacterAvatar({
     return `/characters/${char}/${emotionFile}.png`;
   };
 
-  // Handle emotion transition animation
+  // Handle emotion transition animation with advanced effects
   useEffect(() => {
     if (emotion !== currentEmotion && showTransition) {
       setIsTransitioning(true);
       
-      // Brief delay before switching emotion
+      // Longer transition for more sophisticated animation
       const timeout = setTimeout(() => {
         setCurrentEmotion(emotion);
-        setIsTransitioning(false);
-      }, 150);
+        
+        // Keep transitioning state for fade-in effect
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 200);
+      }, 300);
       
       return () => clearTimeout(timeout);
     } else if (emotion !== currentEmotion) {
@@ -111,28 +115,50 @@ export function CharacterAvatar({
 
   return (
     <div className={`relative ${sizeStyles[size]} ${className}`}>
-      {/* Character avatar */}
+      {/* Character avatar with advanced animations */}
       <div 
-        className={`relative w-full h-full rounded-full overflow-hidden border-2 border-cyan-400 shadow-lg transition-all duration-300 ${
-          isTransitioning ? 'opacity-70 scale-95' : 'opacity-100 scale-100'
+        className={`relative w-full h-full rounded-full overflow-hidden border-2 shadow-lg transition-all duration-500 ease-in-out transform ${
+          isTransitioning 
+            ? 'opacity-0 scale-90 rotate-2 border-cyan-300' 
+            : 'opacity-100 scale-100 rotate-0 border-cyan-400 hover:scale-105 hover:shadow-2xl hover:border-cyan-300'
         }`}
+        style={{
+          filter: isTransitioning 
+            ? 'blur(2px) brightness(0.8)' 
+            : 'blur(0px) brightness(1) drop-shadow(0 0 20px rgba(34, 211, 238, 0.3))'
+        }}
       >
         <Image
           src={getImagePath(characterName, currentEmotion)}
           alt={`${characterName} - ${emotion}`}
           fill
-          className="object-cover"
+          className={`object-cover transition-all duration-500 ${
+            isTransitioning ? 'scale-110' : 'scale-100'
+          }`}
           onError={handleImageError}
           priority={size === 'large'}
         />
         
-        {/* Glow effect */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
+        {/* Enhanced glow effect with pulsing */}
+        <div className={`absolute inset-0 rounded-full transition-all duration-500 ${
+          isTransitioning 
+            ? 'bg-gradient-to-tr from-transparent via-white/5 to-transparent' 
+            : 'bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-pulse'
+        }`} />
+        
+        {/* Shimmer effect during transition */}
+        {isTransitioning && (
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-ping" />
+        )}
       </div>
 
-      {/* Character name label */}
-      <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-        <div className="bg-black/80 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
+      {/* Character name label with animation */}
+      <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 transition-all duration-500 ${
+        isTransitioning ? 'opacity-50 scale-95 translate-y-1' : 'opacity-100 scale-100 translate-y-0'
+      }`}>
+        <div className={`bg-black/80 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap transition-all duration-300 ${
+          isTransitioning ? 'bg-black/60' : 'bg-black/80 hover:bg-black/90'
+        }`}>
           {characterName}
         </div>
       </div>
@@ -162,21 +188,32 @@ interface CharacterSwitcherProps {
   size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge';
 }
 
+/**
+ * Character switcher component with enhanced animations
+ * Features staggered transitions and visual indicators for the active character
+ */
 export function CharacterSwitcher({ 
   characters, 
   className = '',
   size = 'medium' 
 }: CharacterSwitcherProps) {
   return (
-    <div className={`flex justify-center items-end space-x-4 ${className}`}>
+    <div className={`flex justify-center items-end space-x-6 ${className}`}>
       {characters.map((char, index) => (
         <div 
           key={`${char.name}-${index}`}
-          className={`transition-all duration-500 ${
+          className={`relative transition-all duration-700 ease-out transform ${
             char.isActive 
-              ? 'scale-110 opacity-100' 
-              : 'scale-90 opacity-60'
+              ? 'scale-110 opacity-100 translate-y-0 z-10' 
+              : 'scale-85 opacity-50 translate-y-3 z-0 hover:scale-90 hover:opacity-70 hover:translate-y-1'
           }`}
+          style={{
+            // Stagger animation timing for a wave effect
+            transitionDelay: `${index * 150}ms`,
+            filter: char.isActive 
+              ? 'brightness(1.1) saturate(1.2) drop-shadow(0 0 25px rgba(34, 211, 238, 0.4))' 
+              : 'brightness(0.7) saturate(0.6)',
+          }}
         >
           <CharacterAvatar
             characterName={char.name}
@@ -186,7 +223,27 @@ export function CharacterSwitcher({
               size === 'xlarge' ? 'large' :
               size === 'large' ? 'medium' : 'small'}
             showTransition={true}
+            className={char.isActive ? 'animate-pulse' : ''}
           />
+          
+          {/* Active character indicator */}
+          {char.isActive && (
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
+              <div className="flex items-center justify-center">
+                <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce shadow-lg" 
+                     style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-cyan-300 rounded-full animate-bounce shadow-md mx-1" 
+                     style={{ animationDelay: '150ms' }} />
+                <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce shadow-lg" 
+                     style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
+          
+          {/* Glow ring for active character */}
+          {char.isActive && (
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-400/30 animate-ping pointer-events-none" />
+          )}
         </div>
       ))}
     </div>
