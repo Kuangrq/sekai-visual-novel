@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { imageCache } from '@/lib/imageCache';
 
 /**
  * Image Preloader Component
@@ -16,53 +17,48 @@ export function ImagePreloader({ onLoadComplete }: ImagePreloaderProps) {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    // 需要预加载的关键图片
-    const imagesToPreload = [
-      '/assets/background.jpg',
-      // 主要角色的默认表情
-      '/characters/Lumine/Neutral.png',
-      '/characters/Tartaglia/Neutral.png',
-      '/characters/Venti/Neutral.png',
-      '/characters/Zhongli/Neutral.png',
-      // 常用表情
-      '/characters/Lumine/Happy.png',
-      '/characters/Lumine/Surprised.png',
-      '/characters/Tartaglia/Confident.png',
-      '/characters/Tartaglia/Very Happy.png',
-      '/characters/Venti/Happy.png',
-      '/characters/Venti/Confident.png',
-      '/characters/Zhongli/Thinking.png',
-      '/characters/Zhongli/Neutral.png',
-    ];
-
-    setTotalCount(imagesToPreload.length);
-
-    const preloadImage = (src: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          setLoadedCount(prev => prev + 1);
-          resolve();
-        };
-        img.onerror = () => {
-          console.warn(`Failed to preload image: ${src}`);
-          setLoadedCount(prev => prev + 1); // 即使失败也计算，避免卡住
-          resolve(); // 不要 reject，继续加载其他图片
-        };
-        img.src = src;
-      });
+    const preloadAllAssets = async () => {
+      try {
+        // 预加载背景图片
+        const backgroundImages = ['/assets/background.jpg'];
+        
+        setTotalCount(backgroundImages.length + 4); // 4个角色
+        
+        // 预加载背景
+        for (const img of backgroundImages) {
+          try {
+            await imageCache.preloadImage(img);
+            setLoadedCount(prev => prev + 1);
+          } catch (error) {
+            console.warn(`背景图片预加载失败: ${img}`, error);
+            setLoadedCount(prev => prev + 1);
+          }
+        }
+        
+        // 预加载所有角色（并行）
+        const characters = ['Lumine', 'Tartaglia', 'Venti', 'Zhongli'];
+        const preloadPromises = characters.map(async (character) => {
+          try {
+            await imageCache.preloadCharacterEmotions(character);
+            setLoadedCount(prev => prev + 1);
+          } catch (error) {
+            console.warn(`角色 ${character} 预加载失败:`, error);
+            setLoadedCount(prev => prev + 1);
+          }
+        });
+        
+        await Promise.allSettled(preloadPromises);
+        
+        console.log('🎉 所有资源预加载完成');
+        onLoadComplete?.();
+        
+      } catch (error) {
+        console.error('预加载过程中出现错误:', error);
+        onLoadComplete?.();
+      }
     };
 
-    // 并行预加载所有图片
-    Promise.all(imagesToPreload.map(preloadImage))
-      .then(() => {
-        console.log('所有关键图片预加载完成');
-        onLoadComplete?.();
-      })
-      .catch((error) => {
-        console.error('图片预加载过程中出现错误:', error);
-        onLoadComplete?.(); // 即使有错误也继续
-      });
+    preloadAllAssets();
   }, [onLoadComplete]);
 
   const progress = totalCount > 0 ? (loadedCount / totalCount) * 100 : 0;

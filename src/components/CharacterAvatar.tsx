@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { imageCache } from '@/lib/imageCache';
 
 /**
  * Character Avatar Component
@@ -72,6 +73,8 @@ export function CharacterAvatar({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isPreloaded, setIsPreloaded] = useState(false);
+  const mountedRef = useRef(true);
 
   // Build image path based on character and emotion
   const getImagePath = (char: CharacterName, emo: EmotionType): string => {
@@ -79,30 +82,77 @@ export function CharacterAvatar({
     return `/characters/${char}/${emotionFile}.png`;
   };
 
-  // 强制同步状态 - 修复 Vercel 部署后的状态不同步问题
+  // 预加载当前角色的所有表情
   useEffect(() => {
-    console.log(`Avatar 更新: ${characterName} - ${emotion} (当前: ${currentEmotion})`);
+    const preloadCharacter = async () => {
+      try {
+        await imageCache.preloadCharacterEmotions(characterName);
+        if (mountedRef.current) {
+          setIsPreloaded(true);
+        }
+      } catch (error) {
+        console.warn(`预加载 ${characterName} 失败:`, error);
+      }
+    };
+
+    preloadCharacter();
     
-    if (emotion !== currentEmotion) {
-      if (showTransition) {
-        setIsTransitioning(true);
-        
-        // 缩短过渡时间以提高响应性
-        const timeout = setTimeout(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [characterName]);
+
+  // 优化的状态切换逻辑
+  useEffect(() => {
+    if (emotion === currentEmotion) return;
+    
+    console.log(`🎭 Avatar 切换: ${characterName} ${currentEmotion} → ${emotion}`);
+    
+    const imagePath = getImagePath(characterName, emotion);
+    const isCached = imageCache.isCached(imagePath);
+    
+    console.log(`📁 图片缓存状态: ${isCached ? '已缓存' : '未缓存'} - ${imagePath}`);
+    
+    if (showTransition && !isCached) {
+      // 如果图片未缓存，使用较快的过渡
+      setIsTransitioning(true);
+      
+      // 立即开始预加载
+      imageCache.preloadImage(imagePath).then(() => {
+        if (mountedRef.current) {
           setCurrentEmotion(emotion);
-          setImageLoaded(false); // 重置加载状态
+          setImageLoaded(false);
           
-          // 缩短过渡效果时间
           setTimeout(() => {
-            setIsTransitioning(false);
-          }, 150);
-        }, 100);
-        
-        return () => clearTimeout(timeout);
+            if (mountedRef.current) {
+              setIsTransitioning(false);
+            }
+          }, 100);
+        }
+      }).catch(() => {
+        if (mountedRef.current) {
+          setCurrentEmotion(emotion);
+          setIsTransitioning(false);
+        }
+      });
+    } else {
+      // 图片已缓存或不需要过渡，立即切换
+      if (showTransition && isCached) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          if (mountedRef.current) {
+            setCurrentEmotion(emotion);
+            setImageLoaded(true); // 已缓存的图片立即标记为已加载
+            setTimeout(() => {
+              if (mountedRef.current) {
+                setIsTransitioning(false);
+              }
+            }, 50);
+          }
+        }, 50);
       } else {
-        // 立即更新，不使用过渡
         setCurrentEmotion(emotion);
-        setImageLoaded(false);
+        setImageLoaded(isCached);
       }
     }
   }, [emotion, characterName, currentEmotion, showTransition]);
@@ -153,8 +203,10 @@ export function CharacterAvatar({
           } ${!imageLoaded ? 'opacity-0' : ''}`}
           onError={handleImageError}
           onLoad={() => {
-            setImageLoaded(true);
-            console.log(`图片加载完成: ${characterName} - ${currentEmotion}`);
+            if (mountedRef.current) {
+              setImageLoaded(true);
+              console.log(`✅ 图片渲染完成: ${characterName} - ${currentEmotion}`);
+            }
           }}
           priority={size === 'large' || size === 'xlarge'}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -167,9 +219,16 @@ export function CharacterAvatar({
             : 'bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-pulse'
         }`} />
         
+        {/* 加载指示器 */}
+        {!imageLoaded && (
+          <div className={`absolute inset-0 ${getShapeStyle()} bg-gray-700/50 flex items-center justify-center`}>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+          </div>
+        )}
+
         {/* Shimmer effect during transition */}
         {isTransitioning && (
-          <div className={`absolute inset-0 ${getShapeStyle()} bg-gradient-to-r from-transparent via-white/20 to-transparent animate-ping`} />
+          <div className={`absolute inset-0 ${getShapeStyle()} bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse`} />
         )}
       </div>
 
