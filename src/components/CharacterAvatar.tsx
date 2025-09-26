@@ -21,8 +21,9 @@ interface CharacterAvatarProps {
   characterName: CharacterName;
   emotion?: EmotionType;
   className?: string;
-  size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'huge';
+  size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'huge' | 'portrait' | 'fullsize';
   showTransition?: boolean;
+  shape?: 'circle' | 'rectangle';
 }
 
 // Emotion name to filename mapping
@@ -49,12 +50,14 @@ const emotionMap: Record<string, string> = {
 
 // Size style configurations
 const sizeStyles = {
-  small: 'w-16 h-16',
-  medium: 'w-24 h-24',
-  large: 'w-32 h-32',
-  xlarge: 'w-48 h-48',
-  xxlarge: 'w-64 h-64',
-  huge: 'w-80 h-80'
+  small: { circle: 'w-16 h-16', rectangle: 'w-12 h-16' },
+  medium: { circle: 'w-24 h-24', rectangle: 'w-18 h-24' },
+  large: { circle: 'w-32 h-32', rectangle: 'w-24 h-32' },
+  xlarge: { circle: 'w-48 h-48', rectangle: 'w-36 h-48' },
+  xxlarge: { circle: 'w-64 h-64', rectangle: 'w-48 h-64' },
+  huge: { circle: 'w-80 h-80', rectangle: 'w-60 h-80' },
+  portrait: { circle: 'w-96 h-96', rectangle: 'w-80 h-[28rem]' },
+  fullsize: { circle: 'w-[120px] h-[120px]', rectangle: 'w-96 h-[40rem]' }
 };
 
 export function CharacterAvatar({ 
@@ -62,7 +65,8 @@ export function CharacterAvatar({
   emotion = 'neutral', 
   className = '',
   size = 'medium',
-  showTransition = true 
+  showTransition = true,
+  shape = 'circle'
 }: CharacterAvatarProps) {
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType>(emotion);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -101,10 +105,14 @@ export function CharacterAvatar({
     console.warn(`Failed to load avatar: ${getImagePath(characterName, currentEmotion)}`);
   };
 
+  // Get size and shape styles
+  const getSizeStyle = () => sizeStyles[size][shape];
+  const getShapeStyle = () => shape === 'circle' ? 'rounded-full' : 'rounded-lg';
+
   // Fallback avatar when image fails to load
   if (imageError) {
     return (
-      <div className={`${sizeStyles[size]} ${className} bg-gray-700 rounded-full flex items-center justify-center`}>
+      <div className={`${getSizeStyle()} ${className} bg-gray-700 ${getShapeStyle()} flex items-center justify-center`}>
         <div className="text-white text-center">
           <div className="text-xs font-bold">{characterName}</div>
           <div className="text-xs opacity-70">{emotion}</div>
@@ -114,10 +122,10 @@ export function CharacterAvatar({
   }
 
   return (
-    <div className={`relative ${sizeStyles[size]} ${className}`}>
+    <div className={`relative ${getSizeStyle()} ${className}`}>
       {/* Character avatar with advanced animations */}
       <div 
-        className={`relative w-full h-full rounded-full overflow-hidden border-2 shadow-lg transition-all duration-500 ease-in-out transform ${
+        className={`relative w-full h-full ${getShapeStyle()} overflow-hidden border-2 shadow-lg transition-all duration-500 ease-in-out transform ${
           isTransitioning 
             ? 'opacity-0 scale-90 rotate-2 border-cyan-300' 
             : 'opacity-100 scale-100 rotate-0 border-cyan-400 hover:scale-105 hover:shadow-2xl hover:border-cyan-300'
@@ -140,7 +148,7 @@ export function CharacterAvatar({
         />
         
         {/* Enhanced glow effect with pulsing */}
-        <div className={`absolute inset-0 rounded-full transition-all duration-500 ${
+        <div className={`absolute inset-0 ${getShapeStyle()} transition-all duration-500 ${
           isTransitioning 
             ? 'bg-gradient-to-tr from-transparent via-white/5 to-transparent' 
             : 'bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-pulse'
@@ -148,7 +156,7 @@ export function CharacterAvatar({
         
         {/* Shimmer effect during transition */}
         {isTransitioning && (
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-ping" />
+          <div className={`absolute inset-0 ${getShapeStyle()} bg-gradient-to-r from-transparent via-white/20 to-transparent animate-ping`} />
         )}
       </div>
 
@@ -240,10 +248,10 @@ export function CharacterSwitcher({
             </div>
           )}
           
-          {/* Glow ring for active character */}
-          {char.isActive && (
-            <div className="absolute inset-0 rounded-full border-2 border-cyan-400/30 animate-ping pointer-events-none" />
-          )}
+        {/* Glow ring for active character */}
+        {char.isActive && (
+          <div className={`absolute inset-0 ${char.isActive ? 'rounded-lg' : 'rounded-full'} border-2 border-cyan-400/30 animate-ping pointer-events-none`} />
+        )}
         </div>
       ))}
     </div>

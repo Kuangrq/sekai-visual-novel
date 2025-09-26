@@ -15,7 +15,8 @@ const storySegments = [
     choices: [
       { id: 'greet_friendly', text: 'Greet everyone with a friendly smile' },
       { id: 'stay_silent', text: 'Stay silent and observe the situation' },
-      { id: 'ask_about_harbor', text: 'Ask about what\'s happening in Liyue Harbor' }
+      { id: 'ask_about_harbor', text: 'Ask about what\'s happening in Liyue Harbor' },
+      { id: 'end_story', text: '🚪 End story and return to home' }
     ]
   },
   {
@@ -25,7 +26,8 @@ const storySegments = [
       { id: 'ask_lumine', text: 'Ask Lumine more about her travels between worlds' },
       { id: 'challenge_tartaglia', text: 'Accept Tartaglia\'s challenge and show your skills' },
       { id: 'listen_venti', text: 'Ask Venti to play his new ballad' },
-      { id: 'talk_zhongli', text: 'Discuss the mysterious contracts with Zhongli' }
+      { id: 'talk_zhongli', text: 'Discuss the mysterious contracts with Zhongli' },
+      { id: 'end_story', text: '🚪 End story and return to home' }
     ]
   },
   {
@@ -147,7 +149,8 @@ export async function POST(request: NextRequest) {
           choices = [
             { id: 'continue_1', text: 'Continue the conversation' },
             { id: 'ask_question', text: 'Ask a question' },
-            { id: 'change_topic', text: 'Change the subject' }
+            { id: 'change_topic', text: 'Change the subject' },
+            { id: 'end_story', text: '🚪 End story and return to home' }
           ];
         }
         
@@ -157,7 +160,8 @@ export async function POST(request: NextRequest) {
         content = `<Narrator>The AI storyteller seems to have taken a break. Let's continue with our prepared story...</Narrator>`;
         choices = [
           { id: 'greet_friendly', text: 'Greet everyone with a friendly smile' },
-          { id: 'stay_silent', text: 'Stay silent and observe the situation' }
+          { id: 'stay_silent', text: 'Stay silent and observe the situation' },
+          { id: 'end_story', text: '🚪 End story and return to home' }
         ];
       }
     } else {

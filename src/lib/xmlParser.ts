@@ -204,6 +204,9 @@ export function parseXMLToSegments(xmlString: string): {
   };
 }
 
+// Valid character names that have corresponding avatars
+const VALID_CHARACTERS = ['Lumine', 'Tartaglia', 'Venti', 'Zhongli'];
+
 /**
  * Simplified parsing function for processing sample.xml format
  * Uses regex matching for quick extraction of story segments
@@ -236,6 +239,24 @@ export function parseSimpleXML(xmlString: string): ParsedSegment[] {
   for (const characterMatch of characterMatches) {
     const characterName = characterMatch[1];
     const characterContent = characterMatch[2];
+    
+    // Validate character name - only allow characters with avatars
+    if (!VALID_CHARACTERS.includes(characterName)) {
+      console.warn(`Unknown character "${characterName}" detected in AI response. Converting to Narrator.`);
+      
+      // Convert unknown character dialogue to narrator
+      const sayMatches = [...characterContent.matchAll(sayRegex)];
+      for (const sayMatch of sayMatches) {
+        const dialogue = sayMatch[1].trim();
+        if (dialogue) {
+          segments.push({
+            type: 'narrator',
+            text: `Someone says: "${dialogue}"`
+          });
+        }
+      }
+      continue; // Skip the rest of character processing
+    }
     
     // Reset regex indices
     actionRegex.lastIndex = 0;

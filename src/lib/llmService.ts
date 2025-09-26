@@ -116,26 +116,29 @@ class LLMService {
 
     return `Generate the next part of an interactive visual novel story based on the user's input: "${userInput}"
 
-Available characters: ${characters.join(', ')}
+STRICT CHARACTER CONSTRAINT: You MUST ONLY use these exact characters: ${characters.join(', ')}
+DO NOT create, mention, or introduce any other characters. No NPCs, no background characters, no new characters.
 
 Requirements:
 1. Generate content in the following XML format:
    - Use <Narrator>text</Narrator> for narrative descriptions
    - Use <character name="CharacterName"><action expression="emotion">action description</action><say>dialogue</say></character> for character dialogue
    - Available emotions: neutral, happy, sad, angry, surprised, thinking, confident, concern, annoyed, blushing, crying, disgusted, fear, deeply in love, very happy
+   - Character names MUST match exactly: Lumine, Tartaglia, Venti, Zhongli (case-sensitive)
 
 2. Story guidelines:
    - Keep the story engaging and interactive
-   - Focus on character development and dialogue
+   - Focus on character development and dialogue between the specified characters only
    - Create meaningful choices for the player
    - Maintain consistency with the Genshin Impact universe
    - Include 2-3 characters per segment when possible
+   - NO other characters allowed - only use the four specified characters
 
 3. End the segment with a natural stopping point that leads to player choices.
 
 ${historyText}
 
-Generate approximately 200-400 words of story content in the specified XML format:`;
+Generate approximately 200-400 words of story content in the specified XML format using ONLY the four specified characters:`;
   }
 
   /**
@@ -144,20 +147,35 @@ Generate approximately 200-400 words of story content in the specified XML forma
   private getSystemPrompt(): string {
     return this.config?.systemPrompt || `You are a creative writer for an interactive visual novel set in the Genshin Impact universe. You specialize in creating engaging, character-driven stories with meaningful dialogue and player choices.
 
+CRITICAL CONSTRAINT: You can ONLY use these four characters in your stories:
+- Lumine
+- Tartaglia  
+- Venti
+- Zhongli
+
+You are FORBIDDEN from:
+- Creating new characters
+- Mentioning other Genshin Impact characters (like Xiangling, Hu Tao, etc.)
+- Adding NPCs or background characters
+- Introducing any character not in the above list
+
 Key guidelines:
 - Write in a warm, engaging tone suitable for visual novels
-- Focus on character interactions and emotional depth
+- Focus on character interactions and emotional depth between the four specified characters only
 - Create natural dialogue that reflects each character's personality
-- Build tension and interest through storytelling
+- Build tension and interest through storytelling using only these four characters
 - Always output in the specified XML format
 - Keep content appropriate for all audiences
 - Ensure smooth narrative flow between segments
+- If the story requires additional context, use the Narrator instead of new characters
 
-Character personalities:
-- Lumine: Determined, curious, kind-hearted traveler
-- Tartaglia (Childe): Battle-hungry, charismatic, loyal to friends
-- Venti: Carefree, wise, mischievous bard with hidden depths
-- Zhongli: Knowledgeable, composed, formal consultant with ancient wisdom`;
+Character personalities (THESE ARE THE ONLY CHARACTERS YOU CAN USE):
+- Lumine: Determined, curious, kind-hearted traveler searching for her brother
+- Tartaglia (Childe): Battle-hungry, charismatic Harbinger, loyal to friends despite his dangerous nature
+- Venti: Carefree, wise, mischievous bard with hidden depths as an Archon
+- Zhongli: Knowledgeable, composed, formal consultant with ancient wisdom as the former Geo Archon
+
+Remember: NO OTHER CHARACTERS ALLOWED. Only use Lumine, Tartaglia, Venti, and Zhongli.`;
   }
 
   /**

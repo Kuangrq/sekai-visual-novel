@@ -170,6 +170,33 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   // Handle user choice selection
   const handleChoice = async (choiceId: string, choiceText: string) => {
     audioManager.playSound('select'); // Play selection sound
+    
+    // Check if user wants to end the story
+    if (choiceId === 'end_story') {
+      audioManager.playSound('notification'); // Play end sound
+      
+      // Add choice to conversation history
+      saveManager.addToHistory({
+        type: 'user_choice',
+        content: choiceText,
+      });
+      
+      // Add a farewell message to history
+      saveManager.addToHistory({
+        type: 'story_segment',
+        content: 'Story ended by user choice.',
+      });
+      
+      // Reset game state and return to home
+      setGameStarted(false);
+      setCurrentSegments([]);
+      setCurrentSegmentIndex(0);
+      setChoices([]);
+      setStoryHistory([]);
+      setUserPrompt('');
+      return;
+    }
+    
     setStoryHistory(prev => [...prev, choiceText]);
     setChoices([]);
     
@@ -468,12 +495,13 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Character display area */}
         {currentCharacter && (
-          <div className="flex-shrink-0 pt-8 pb-6">
+          <div className="flex-shrink-0 pt-4 pb-4">
             <div className="flex justify-center">
                <CharacterAvatar
                  characterName={currentCharacter.name}
                  emotion={currentCharacter.emotion}
-                 size="xxlarge"
+                 size="fullsize"
+                 shape="rectangle"
                  showTransition={true}
                  className="drop-shadow-2xl"
                />
@@ -510,16 +538,23 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           <div className="flex-shrink-0 p-6">
             <div className="max-w-4xl mx-auto">
               <div className="grid gap-3">
-                {choices.map((choice) => (
-                  <button
-                    key={choice.id}
-                    onClick={() => handleChoice(choice.id, choice.text)}
-                    onMouseEnter={() => audioManager.playSound('hover')} // Play hover sound
-                    className="w-full p-4 bg-black/60 hover:bg-black/80 text-white rounded-lg border border-cyan-400/30 hover:border-cyan-400 transition-all duration-200 text-left backdrop-blur-sm"
-                  >
-                    {choice.text}
-                  </button>
-                ))}
+                {choices.map((choice) => {
+                  const isEndChoice = choice.id === 'end_story';
+                  return (
+                    <button
+                      key={choice.id}
+                      onClick={() => handleChoice(choice.id, choice.text)}
+                      onMouseEnter={() => audioManager.playSound('hover')} // Play hover sound
+                      className={`w-full p-4 text-white rounded-lg border transition-all duration-200 text-left backdrop-blur-sm ${
+                        isEndChoice
+                          ? 'bg-red-900/60 hover:bg-red-900/80 border-red-400/30 hover:border-red-400'
+                          : 'bg-black/60 hover:bg-black/80 border-cyan-400/30 hover:border-cyan-400'
+                      }`}
+                    >
+                      {choice.text}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
