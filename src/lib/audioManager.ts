@@ -9,9 +9,7 @@ export type SoundType =
   | 'hover' 
   | 'select' 
   | 'transition' 
-  | 'notification'
-  | 'character_enter'
-  | 'character_exit';
+  | 'notification';
 
 interface AudioSettings {
   enabled: boolean;
@@ -25,7 +23,7 @@ class AudioManager {
   private settings: AudioSettings = {
     enabled: true,
     volume: 0.7,
-    typingVolume: 0.3,
+    typingVolume: 0.25, // Moderate volume for realistic keyboard sound
     uiVolume: 0.5,
   };
   private isInitialized = false;
@@ -77,6 +75,31 @@ class AudioManager {
   }
 
   /**
+   * Create low-frequency typing sound with just the thump/impact feel
+   */
+  private createKeyboardSound(gainNode: GainNode, now: number, baseVolume: number): void {
+    if (!this.audioContext) return;
+
+    // Clearer low-frequency thump sound
+    const thumpOsc = this.audioContext.createOscillator();
+    
+    // Higher frequency for more clarity
+    thumpOsc.frequency.setValueAtTime(120 + Math.random() * 60, now); // 120-180Hz - clearer range
+    thumpOsc.type = 'triangle'; // Triangle wave for definition
+    
+    thumpOsc.connect(gainNode);
+    
+    // Snappier envelope for better clarity
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(baseVolume * this.settings.typingVolume, now + 0.007); // Quicker attack
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.09); // Shorter decay
+    
+    // Start the oscillator
+    thumpOsc.start(now);
+    thumpOsc.stop(now + 0.09);
+  }
+
+  /**
    * Configure oscillator and gain for different sound types
    */
   private configureSoundEffect(
@@ -89,12 +112,8 @@ class AudioManager {
 
     switch (type) {
       case 'typing':
-        // Soft mechanical keyboard sound
-        oscillator.frequency.setValueAtTime(800 + Math.random() * 200, now);
-        oscillator.type = 'square';
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(baseVolume * this.settings.typingVolume * 0.3, now + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        // Realistic mechanical keyboard sound with noise component
+        this.createKeyboardSound(gainNode, now, baseVolume);
         break;
 
       case 'click':
@@ -144,25 +163,6 @@ class AudioManager {
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
         break;
 
-      case 'character_enter':
-        // Character entrance sound
-        oscillator.frequency.setValueAtTime(330, now);
-        oscillator.frequency.linearRampToValueAtTime(440, now + 0.2);
-        oscillator.type = 'triangle';
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(baseVolume * this.settings.uiVolume * 0.4, now + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        break;
-
-      case 'character_exit':
-        // Character exit sound
-        oscillator.frequency.setValueAtTime(440, now);
-        oscillator.frequency.linearRampToValueAtTime(220, now + 0.3);
-        oscillator.type = 'triangle';
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(baseVolume * this.settings.uiVolume * 0.3, now + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-        break;
 
       default:
         // Default click sound
@@ -185,8 +185,6 @@ class AudioManager {
       case 'select': return 0.3;
       case 'transition': return 0.5;
       case 'notification': return 0.8;
-      case 'character_enter': return 0.4;
-      case 'character_exit': return 0.5;
       default: return 0.1;
     }
   }

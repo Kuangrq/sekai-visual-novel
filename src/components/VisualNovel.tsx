@@ -228,11 +228,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
       // Play transition sound when moving to next segment
       const nextSegment = currentSegments[currentSegmentIndex + 1];
       
-      // Play character transition sound if character changes
-      if (nextSegment.type === 'character' && currentSegment.type === 'character' && 
-          nextSegment.name !== currentSegment.name) {
-        audioManager.playSound('character_enter');
-      }
+      // Character transition without sound effect
       
       setCurrentSegmentIndex(prev => prev + 1);
     }
@@ -348,9 +344,16 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     fastMode,
   } : undefined;
 
-  if (!gameStarted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black flex items-center justify-center">
+  return (
+    <>
+      {!gameStarted ? (
+      <div className="min-h-screen relative bg-gradient-to-b from-purple-900 via-blue-900 to-black flex items-center justify-center">
+        {/* Homepage background image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-40"
+          style={{ backgroundImage: 'url(/assets/homepage-background.jpg)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
         {/* Control panel */}
         <div className="absolute top-4 right-4 z-50 flex space-x-2">
           <HistoryButton 
@@ -368,7 +371,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           <AudioControls />
         </div>
         
-        <div className="max-w-2xl mx-auto p-8 text-center">
+        <div className="relative z-10 max-w-2xl mx-auto p-8 text-center">
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-white mb-4">
               AI Visual Novel Adventure
@@ -393,7 +396,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
             </p>
           </div>
           
-          <div className="bg-black/40 rounded-lg p-6 backdrop-blur-sm">
+          <div className="bg-black/60 rounded-lg p-6 backdrop-blur-md border border-cyan-400/20 shadow-2xl">
             <label className="block text-white text-sm font-medium mb-3">
               Enter your story beginning:
             </label>
@@ -464,10 +467,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           </div>
         </div>
       </div>
-    );
-  }
-
-  return (
+      ) : (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-black">
       {/* Control panel */}
       <div className="absolute top-4 right-4 z-50 flex space-x-2">
@@ -591,6 +591,8 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           </div>
         )}
       </div>
+    </div>
+      )}
       
       {/* History Modal */}
       <ConversationHistory
@@ -606,6 +608,6 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
         onLoad={handleLoad}
         currentGameState={currentGameState}
       />
-    </div>
+    </>
   );
 }
