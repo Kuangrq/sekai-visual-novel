@@ -6,7 +6,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { llmService } from '@/lib/llmService';
-import { parseSimpleXML } from '@/lib/xmlParser';
 
 // Mock story data for demonstration
 const storySegments = [

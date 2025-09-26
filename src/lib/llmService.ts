@@ -45,7 +45,7 @@ class LLMService {
   getConfig(): Omit<LLMConfig, 'apiKey'> | null {
     if (!this.config) return null;
     
-    const { apiKey, ...configWithoutKey } = this.config;
+    const { apiKey: _, ...configWithoutKey } = this.config;
     return configWithoutKey;
   }
 
@@ -253,8 +253,8 @@ Character personalities:
       if (response.ok) {
         const data = await response.json();
         const models = data.data
-          .filter((model: any) => model.id.includes('gpt'))
-          .map((model: any) => model.id)
+          .filter((model: { id: string }) => model.id.includes('gpt'))
+          .map((model: { id: string }) => model.id)
           .sort();
         
         return models.length > 0 ? models : defaultModels;
