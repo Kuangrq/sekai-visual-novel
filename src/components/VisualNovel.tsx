@@ -14,7 +14,7 @@ import { AudioControls } from './AudioControls';
 import { ConversationHistory, HistoryButton } from './ConversationHistory';
 import { SaveManagerComponent, SaveLoadButton } from './SaveManager';
 import { saveManager, GameSave } from '@/lib/saveManager';
-import { LLMSettings, LLMButton } from './LLMSettings';
+import { LLMSettings, LLMButton, LLMSettingsInline } from './LLMSettings';
 import { llmService } from '@/lib/llmService';
 
 interface Choice {
@@ -47,6 +47,7 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const [showLLMSettings, setShowLLMSettings] = useState(false);
   const [isLLMConfigured, setIsLLMConfigured] = useState(false);
   const [useLLM, setUseLLM] = useState(false);
+  
 
   // Get currently displayed character and emotion
   const getCurrentCharacter = (): { name: CharacterName; emotion: EmotionType } | null => {
@@ -345,6 +346,21 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
             <h1 className="text-4xl font-bold text-white mb-4">
               AI Visual Novel Adventure
             </h1>
+            
+            {/* LLM设置弹窗 */}
+            {showLLMSettings && (
+              <LLMSettingsInline 
+                onClose={() => setShowLLMSettings(false)}
+                onConfigured={(configured) => {
+                  setIsLLMConfigured(configured);
+                  if (configured) {
+                    setUseLLM(true);
+                  }
+                  setShowLLMSettings(false);
+                }}
+              />
+            )}
+            
             <p className="text-gray-300 text-lg">
               Begin your personalized AI-driven story journey
             </p>
@@ -554,18 +570,6 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
         onSave={handleSave}
         onLoad={handleLoad}
         currentGameState={currentGameState}
-      />
-      
-      {/* LLM Settings Modal */}
-      <LLMSettings
-        isOpen={showLLMSettings}
-        onClose={() => setShowLLMSettings(false)}
-        onConfigured={(configured) => {
-          setIsLLMConfigured(configured);
-          if (configured) {
-            setUseLLM(true);
-          }
-        }}
       />
     </div>
   );

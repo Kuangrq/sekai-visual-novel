@@ -21,6 +21,7 @@ export function LLMSettings({
   onConfigured,
   className = '' 
 }: LLMSettingsProps) {
+  console.log('LLMSettings component created - isOpen:', isOpen); // 更详细的调试
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('gpt-4');
   const [temperature, setTemperature] = useState(0.8);
@@ -141,11 +142,35 @@ export function LLMSettings({
     }
   };
 
+  console.log('LLMSettings isOpen:', isOpen); // 添加调试日志
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center ${className}`}>
-      <div className="bg-black/90 border border-green-400/30 rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <div 
+        className="bg-black/90 border border-green-400/30 rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.95)',
+          border: '2px solid #10b981',
+          borderRadius: '8px',
+          width: '90%',
+          maxWidth: '600px',
+          maxHeight: '80vh'
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-green-400/30">
           <div className="flex items-center space-x-2">
@@ -342,6 +367,178 @@ export function LLMSettings({
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * LLM Settings Inline Component
+ * 内联版本的LLM设置，用于解决固定定位问题
+ */
+interface LLMSettingsInlineProps {
+  onClose: () => void;
+  onConfigured?: (configured: boolean) => void;
+}
+
+export function LLMSettingsInline({ onClose, onConfigured }: LLMSettingsInlineProps) {
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  useEffect(() => {
+    // 尝试加载现有配置
+    if (llmService.loadConfig()) {
+      // 不显示已保存的API密钥，保持安全性
+      console.log('已有LLM配置存在');
+    }
+  }, []);
+
+  const handleSave = () => {
+    if (!apiKey.trim()) {
+      alert('请输入您的OpenAI API密钥');
+      return;
+    }
+
+    audioManager.playSound('notification');
+
+    const config = {
+      apiKey: apiKey.trim(),
+      model: 'gpt-4',
+      temperature: 0.8,
+      maxTokens: 1000,
+    };
+
+    llmService.initialize(config);
+    onConfigured?.(true);
+    
+    alert('LLM配置保存成功！');
+  };
+
+  return (
+    <div style={{
+      width: '90%',
+      maxWidth: '600px',
+      backgroundColor: 'rgba(0, 0, 0, 0.95)',
+      color: 'white',
+      margin: '20px auto',
+      padding: '20px',
+      border: '2px solid #10b981',
+      borderRadius: '8px'
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        borderBottom: '1px solid #10b981',
+        paddingBottom: '10px'
+      }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>🤖 AI Story Generator</h2>
+        <button
+          onClick={() => {
+            audioManager.playSound('click');
+            onClose();
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#999',
+            fontSize: '18px',
+            cursor: 'pointer'
+          }}
+        >
+          ✕
+        </button>
+      </div>
+      
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          OpenAI API Key <span style={{ color: 'red' }}>*</span>
+        </label>
+        <div style={{ position: 'relative' }}>
+          <input
+            type={showApiKey ? 'text' : 'password'}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="sk-..."
+            style={{
+              width: '100%',
+              padding: '8px 40px 8px 8px',
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              border: '1px solid #666',
+              borderRadius: '4px',
+              color: 'white',
+              outline: 'none'
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowApiKey(!showApiKey)}
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              color: '#999',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            {showApiKey ? '🙈' : '👁️'}
+          </button>
+        </div>
+        <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+          Get your API key from{' '}
+          <a 
+            href="https://platform.openai.com/api-keys" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: '#10b981', textDecoration: 'underline' }}
+          >
+            OpenAI Platform
+          </a>
+        </div>
+      </div>
+      
+      <div style={{ fontSize: '12px', color: '#fbbf24', marginBottom: '15px' }}>
+        ⚠️ Your API key is stored locally and never shared
+      </div>
+      
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <button
+          onClick={handleSave}
+          disabled={!apiKey.trim()}
+          style={{
+            backgroundColor: apiKey.trim() ? '#10b981' : '#666',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '4px',
+            cursor: apiKey.trim() ? 'pointer' : 'not-allowed',
+            marginRight: '10px',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          Save Configuration
+        </button>
+        <button
+          onClick={() => {
+            audioManager.playSound('click');
+            onClose();
+          }}
+          style={{
+            backgroundColor: '#666',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

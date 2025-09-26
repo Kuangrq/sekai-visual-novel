@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['react', 'react-dom'],
   },
+  // 设置turbopack根目录以解决多lockfile警告
+  turbopack: {
+    root: '.',
+  },
 };
 
 export default nextConfig;
