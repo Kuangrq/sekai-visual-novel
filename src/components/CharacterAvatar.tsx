@@ -71,6 +71,7 @@ export function CharacterAvatar({
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType>(emotion);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Build image path based on character and emotion
   const getImagePath = (char: CharacterName, emo: EmotionType): string => {
@@ -78,26 +79,33 @@ export function CharacterAvatar({
     return `/characters/${char}/${emotionFile}.png`;
   };
 
-  // Handle emotion transition animation with advanced effects
+  // 强制同步状态 - 修复 Vercel 部署后的状态不同步问题
   useEffect(() => {
-    if (emotion !== currentEmotion && showTransition) {
-      setIsTransitioning(true);
-      
-      // Longer transition for more sophisticated animation
-      const timeout = setTimeout(() => {
-        setCurrentEmotion(emotion);
+    console.log(`Avatar 更新: ${characterName} - ${emotion} (当前: ${currentEmotion})`);
+    
+    if (emotion !== currentEmotion) {
+      if (showTransition) {
+        setIsTransitioning(true);
         
-        // Keep transitioning state for fade-in effect
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 200);
-      }, 300);
-      
-      return () => clearTimeout(timeout);
-    } else if (emotion !== currentEmotion) {
-      setCurrentEmotion(emotion);
+        // 缩短过渡时间以提高响应性
+        const timeout = setTimeout(() => {
+          setCurrentEmotion(emotion);
+          setImageLoaded(false); // 重置加载状态
+          
+          // 缩短过渡效果时间
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 150);
+        }, 100);
+        
+        return () => clearTimeout(timeout);
+      } else {
+        // 立即更新，不使用过渡
+        setCurrentEmotion(emotion);
+        setImageLoaded(false);
+      }
     }
-  }, [emotion, currentEmotion, showTransition]);
+  }, [emotion, characterName, currentEmotion, showTransition]);
 
   // Handle image loading errors
   const handleImageError = () => {
@@ -137,14 +145,19 @@ export function CharacterAvatar({
         }}
       >
         <Image
-          src={getImagePath(characterName, currentEmotion)}
-          alt={`${characterName} - ${emotion}`}
+          src={imageError ? '/characters/Lumine/Neutral.png' : getImagePath(characterName, currentEmotion)}
+          alt={`${characterName} - ${currentEmotion}`}
           fill
-          className={`object-cover transition-all duration-500 ${
-            isTransitioning ? 'scale-110' : 'scale-100'
-          }`}
+          className={`object-cover transition-all duration-300 ${
+            isTransitioning ? 'opacity-70 scale-105' : 'opacity-100 scale-100'
+          } ${!imageLoaded ? 'opacity-0' : ''}`}
           onError={handleImageError}
-          priority={size === 'large'}
+          onLoad={() => {
+            setImageLoaded(true);
+            console.log(`图片加载完成: ${characterName} - ${currentEmotion}`);
+          }}
+          priority={size === 'large' || size === 'xlarge'}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         
         {/* Enhanced glow effect with pulsing */}

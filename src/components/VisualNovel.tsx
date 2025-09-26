@@ -16,6 +16,7 @@ import { SaveManagerComponent, SaveLoadButton } from './SaveManager';
 import { saveManager, GameSave } from '@/lib/saveManager';
 import { LLMSettings, LLMButton, LLMSettingsInline } from './LLMSettings';
 import { llmService } from '@/lib/llmService';
+import { ImagePreloader } from './ImagePreloader';
 
 interface Choice {
   id: string;
@@ -47,6 +48,9 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const [showLLMSettings, setShowLLMSettings] = useState(false);
   const [isLLMConfigured, setIsLLMConfigured] = useState(false);
   const [useLLM, setUseLLM] = useState(false);
+  
+  // 预加载状态 - 修复 Vercel 部署后的性能问题
+  const [isPreloading, setIsPreloading] = useState(true);
   
 
   // Get currently displayed character and emotion
@@ -343,6 +347,17 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     gameStarted,
     fastMode,
   } : undefined;
+
+  // 预加载完成处理
+  const handlePreloadComplete = () => {
+    setIsPreloading(false);
+    console.log('资源预加载完成');
+  };
+
+  // 如果还在预加载，显示预加载器
+  if (isPreloading) {
+    return <ImagePreloader onLoadComplete={handlePreloadComplete} />;
+  }
 
   return (
     <>
