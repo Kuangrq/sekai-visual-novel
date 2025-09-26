@@ -1,10 +1,12 @@
 /**
  * Story API Route
  * Handles streaming story content and user choice processing
- * Simulates LLM responses with predefined story segments
+ * Supports both predefined story segments and real LLM integration
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { llmService } from '@/lib/llmService';
+import { parseSimpleXML } from '@/lib/xmlParser';
 
 // Mock story data for demonstration
 const storySegments = [
@@ -117,44 +119,88 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { choice, fastMode } = await request.json();
+    const { choice, prompt, storyHistory, fastMode, useLLM, llmConfig } = await request.json();
     
-    // Select appropriate story segment based on user choice
-    let selectedSegment = storySegments[0]; // Default to intro
+    let content = '';
+    let choices: Array<{ id: string; text: string; }> = [];
     
-    if (!choice) {
-      // New story beginning
-      selectedSegment = storySegments[0];
-    } else {
-      // Route to appropriate story path based on choice
-      switch (choice) {
-        case 'greet_friendly':
-        case 'stay_silent':
-        case 'ask_about_harbor':
-          selectedSegment = storySegments[1]; // character_responses
-          break;
-        case 'ask_lumine':
-          selectedSegment = storySegments[2]; // lumine_path
-          break;
-        case 'challenge_tartaglia':
-          selectedSegment = storySegments[3]; // tartaglia_path
-          break;
-        case 'listen_venti':
-          selectedSegment = storySegments[4]; // venti_path
-          break;
-        case 'talk_zhongli':
-          selectedSegment = storySegments[5]; // zhongli_path
-          break;
-        default:
-          selectedSegment = storySegments[1]; // Fallback to character intro
+    // Use LLM if configured and requested
+    if (useLLM && llmConfig) {
+      try {
+        // Initialize LLM service with provided config
+        llmService.initialize(llmConfig);
+        
+        // Determine user input for LLM
+        const userInput = choice ? `User chose: ${choice}` : prompt || 'Begin the story';
+        
+        // Generate story using LLM
+        const llmResponse = await llmService.generateStory(
+          userInput,
+          storyHistory || [],
+          ['Lumine', 'Tartaglia', 'Venti', 'Zhongli']
+        );
+        
+        content = llmResponse;
+        
+        // Generate choices based on the story content
+        // For LLM-generated content, we'll provide generic choices
+        if (content && !content.includes('Story Complete')) {
+          choices = [
+            { id: 'continue_1', text: 'Continue the conversation' },
+            { id: 'ask_question', text: 'Ask a question' },
+            { id: 'change_topic', text: 'Change the subject' }
+          ];
+        }
+        
+      } catch (error) {
+        console.error('LLM generation failed:', error);
+        // Fallback to predefined content if LLM fails
+        content = `<Narrator>The AI storyteller seems to have taken a break. Let's continue with our prepared story...</Narrator>`;
+        choices = [
+          { id: 'greet_friendly', text: 'Greet everyone with a friendly smile' },
+          { id: 'stay_silent', text: 'Stay silent and observe the situation' }
+        ];
       }
+    } else {
+      // Use predefined story segments
+      let selectedSegment = storySegments[0]; // Default to intro
+      
+      if (!choice) {
+        // New story beginning
+        selectedSegment = storySegments[0];
+      } else {
+        // Route to appropriate story path based on choice
+        switch (choice) {
+          case 'greet_friendly':
+          case 'stay_silent':
+          case 'ask_about_harbor':
+            selectedSegment = storySegments[1]; // character_responses
+            break;
+          case 'ask_lumine':
+            selectedSegment = storySegments[2]; // lumine_path
+            break;
+          case 'challenge_tartaglia':
+            selectedSegment = storySegments[3]; // tartaglia_path
+            break;
+          case 'listen_venti':
+            selectedSegment = storySegments[4]; // venti_path
+            break;
+          case 'talk_zhongli':
+            selectedSegment = storySegments[5]; // zhongli_path
+            break;
+          default:
+            selectedSegment = storySegments[1]; // Fallback to character intro
+        }
+      }
+      
+      content = selectedSegment.content;
+      choices = selectedSegment.choices;
     }
 
     const encoder = new TextEncoder();
     
     const stream = new ReadableStream({
       start(controller) {
-        const content = selectedSegment.content;
         
         if (fastMode) {
           // Fast mode: send all content immediately
@@ -168,7 +214,7 @@ export async function POST(request: NextRequest) {
             type: 'complete',
             data: '',
             isComplete: true,
-            choices: selectedSegment.choices
+            choices: choices
           }) + '\n'));
           
           controller.close();
@@ -191,12 +237,12 @@ export async function POST(request: NextRequest) {
               index += chunkSize;
               setTimeout(pushChunk, Math.random() * 20 + 5);
             } else {
-              controller.enqueue(encoder.encode(JSON.stringify({
-                type: 'complete',
-                data: '',
-                isComplete: true,
-                choices: selectedSegment.choices
-              }) + '\n'));
+                    controller.enqueue(encoder.encode(JSON.stringify({
+                      type: 'complete',
+                      data: '',
+                      isComplete: true,
+                      choices: choices
+                    }) + '\n'));
               
               controller.close();
             }

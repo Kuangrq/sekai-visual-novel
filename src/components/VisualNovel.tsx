@@ -14,6 +14,8 @@ import { AudioControls } from './AudioControls';
 import { ConversationHistory, HistoryButton } from './ConversationHistory';
 import { SaveManagerComponent, SaveLoadButton } from './SaveManager';
 import { saveManager, GameSave } from '@/lib/saveManager';
+import { LLMSettings, LLMButton } from './LLMSettings';
+import { llmService } from '@/lib/llmService';
 
 interface Choice {
   id: string;
@@ -40,6 +42,11 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const [hasHistory, setHasHistory] = useState(false);
   const [hasSavedProgress, setHasSavedProgress] = useState(false);
   const [playStartTime, setPlayStartTime] = useState<Date | null>(null);
+  
+  // LLM state
+  const [showLLMSettings, setShowLLMSettings] = useState(false);
+  const [isLLMConfigured, setIsLLMConfigured] = useState(false);
+  const [useLLM, setUseLLM] = useState(false);
 
   // Get currently displayed character and emotion
   const getCurrentCharacter = (): { name: CharacterName; emotion: EmotionType } | null => {
@@ -57,6 +64,19 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
   const fetchStory = useCallback(async (choice?: string, prompt?: string) => {
     setIsLoading(true);
     
+    // Get LLM config if needed
+    let llmConfig = null;
+    if (useLLM && isLLMConfigured) {
+      try {
+        const saved = localStorage.getItem('visual-novel-llm-config');
+        if (saved) {
+          llmConfig = JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Failed to load LLM config for API request:', error);
+      }
+    }
+    
     try {
       const response = await fetch('/api/story', {
         method: 'POST',
@@ -67,7 +87,9 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           choice,
           prompt,
           storyHistory,
-          fastMode
+          fastMode,
+          useLLM: useLLM && isLLMConfigured,
+          llmConfig
         }),
       });
 
@@ -115,11 +137,19 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [storyHistory, onStoryUpdate, fastMode]);
+  }, [storyHistory, onStoryUpdate, fastMode, useLLM, isLLMConfigured]);
 
   // Start the game with user's initial prompt
   const startGame = async () => {
     if (!userPrompt.trim()) return;
+    
+    // Check if user wants to use LLM but it's not configured
+    if (useLLM && !isLLMConfigured) {
+      audioManager.playSound('click');
+      alert('Please configure your OpenAI API key first to use AI-generated stories.');
+      setShowLLMSettings(true);
+      return;
+    }
     
     audioManager.playSound('notification'); // Play game start sound
     setGameStarted(true);
@@ -258,10 +288,23 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showHistory, showSaveManager, hasHistory, gameStarted]);
 
-  // Check for existing history on component mount
+  // Check for existing history and LLM config on component mount
   useEffect(() => {
     const existingHistory = saveManager.getConversationHistory();
     setHasHistory(existingHistory.length > 0);
+    
+    // Check if LLM is configured
+    const checkLLMConfig = () => {
+      if (llmService.loadConfig()) {
+        setIsLLMConfigured(true);
+        // Auto-enable LLM if configured
+        setUseLLM(true);
+      } else {
+        setIsLLMConfigured(false);
+      }
+    };
+    
+    checkLLMConfig();
   }, []);
 
   const currentCharacter = getCurrentCharacter();
@@ -289,6 +332,10 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
           <SaveLoadButton 
             onClick={() => setShowSaveManager(true)} 
             hasProgress={hasSavedProgress} 
+          />
+          <LLMButton 
+            onClick={() => setShowLLMSettings(true)} 
+            isConfigured={isLLMConfigured} 
           />
           <AudioControls />
         </div>
@@ -318,18 +365,50 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
               {userPrompt.length}/500
             </div>
             
-            {/* Fast mode toggle */}
-            <div className="mt-4 flex items-center justify-center space-x-3">
-              <label className="flex items-center space-x-2 text-gray-300 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={fastMode}
-                  onChange={(e) => setFastMode(e.target.checked)}
-                  className="w-4 h-4 text-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-400 focus:ring-2"
-                />
-                <span>Fast mode (instant story loading)</span>
-              </label>
-            </div>
+             {/* Game options */}
+             <div className="mt-4 space-y-3">
+               <div className="flex items-center justify-center">
+                 <label className="flex items-center space-x-2 text-gray-300 text-sm cursor-pointer">
+                   <input
+                     type="checkbox"
+                     checked={fastMode}
+                     onChange={(e) => setFastMode(e.target.checked)}
+                     className="w-4 h-4 text-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-400 focus:ring-2"
+                   />
+                   <span>Fast mode (instant story loading)</span>
+                 </label>
+               </div>
+               
+               <div className="flex items-center justify-center">
+                 <label className="flex items-center space-x-2 text-gray-300 text-sm cursor-pointer">
+                   <input
+                     type="checkbox"
+                     checked={useLLM}
+                     onChange={(e) => setUseLLM(e.target.checked)}
+                     className="w-4 h-4 text-green-500 bg-gray-800 border-gray-600 rounded focus:ring-green-400 focus:ring-2"
+                   />
+                   <span>🤖 AI-Generated Story (OpenAI)</span>
+                   {isLLMConfigured && (
+                     <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">
+                       Ready
+                     </span>
+                   )}
+                   {!isLLMConfigured && useLLM && (
+                     <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
+                       Not Configured
+                     </span>
+                   )}
+                 </label>
+               </div>
+               
+               {!isLLMConfigured && (
+                 <div className="flex items-center justify-center">
+                   <div className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded px-3 py-2 text-center">
+                     ⚙️ Click the AI settings button above to configure AI stories
+                   </div>
+                 </div>
+               )}
+             </div>
             
             <button
               onClick={startGame}
@@ -356,6 +435,10 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
         <SaveLoadButton 
           onClick={() => setShowSaveManager(true)} 
           hasProgress={hasSavedProgress || gameStarted} 
+        />
+        <LLMButton 
+          onClick={() => setShowLLMSettings(true)} 
+          isConfigured={isLLMConfigured} 
         />
         <AudioControls />
       </div>
@@ -471,6 +554,18 @@ export function VisualNovel({ onStoryUpdate }: VisualNovelProps) {
         onSave={handleSave}
         onLoad={handleLoad}
         currentGameState={currentGameState}
+      />
+      
+      {/* LLM Settings Modal */}
+      <LLMSettings
+        isOpen={showLLMSettings}
+        onClose={() => setShowLLMSettings(false)}
+        onConfigured={(configured) => {
+          setIsLLMConfigured(configured);
+          if (configured) {
+            setUseLLM(true);
+          }
+        }}
       />
     </div>
   );
